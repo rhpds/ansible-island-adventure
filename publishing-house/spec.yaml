@@ -109,11 +109,21 @@ approval_checklist:
   content:
     prerequisites_verifiable: false
     assessment_strategy: ""
-    catalog_gap: ""
+    catalog_gap: "Existing CTF labs on the catalog are security-focused and participant-facing (DevSecOps investigation). No content teaches Red Hatters how to deploy, facilitate, and generate pipeline from the Ansible Island Adventure CTF platform for customer engagements."
     design_overview: ""
     module_summaries: []
-    rcars_overlap_pct: null
-    rcars_top_matches: []
+    rcars_overlap_pct: 75
+    rcars_top_matches:
+      - title: "Unmasking the Attack - A DevSecOps CTF on OpenShift"
+        ci_name: "sandboxes-gpte.devsecops-ctf-on-openshift.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=sandboxes-gpte.devsecops-ctf-on-openshift.prod"
+        relevance_score: 75
+        why_it_fits: "CTF-style workshop on OpenShift with hands-on investigation experience, but focuses on DevSecOps security rather than Ansible Automation Platform or CTF facilitation training."
+      - title: "Code Red: The Breach Challenge!"
+        ci_name: "published.code-red-breach-challenge.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.code-red-breach-challenge.prod"
+        relevance_score: 74
+        why_it_fits: "CTF-format lab on OpenShift teaching participants to investigate security vulnerabilities, but is participant-facing rather than facilitator-training for deploying the Ansible Island Adventure platform."
     rejections: []
 
   infra:
