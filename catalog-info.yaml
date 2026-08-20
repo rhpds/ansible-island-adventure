@@ -8,7 +8,7 @@ metadata:
     (Ansible Automation Platform). '
   annotations:
     ph.rhdp.io/content-type: lab
-    ph.rhdp.io/deployment-mode: self_published
+    ph.rhdp.io/deployment-mode: rhdp_published
     ph.rhdp.io/github-user: l3acon
     ph.rhdp.io/owner: matferna@redhat.com
     backstage.io/techdocs-ref: dir:.
