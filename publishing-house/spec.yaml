@@ -21,8 +21,36 @@ project:
 
 spec:
   title: "Ansible Island Adventure"
-  learning_objectives: []
-  modules: []              # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
+  learning_objectives:
+    - "Deploy the Ansible Island Adventure environment on a Red Hat OpenShift cluster by running the provided Ansible playbook to produce a fully functional CTFd scoring platform, Gitea repositories, and per-player credentials"
+    - "Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation guidance, handout templates, and pacing recommendations for groups of varying size and technical background"
+    - "Configure challenge definitions, difficulty tiers, and content to tailor the event for specific customer use cases or partner engagements"
+    - "Analyze participant engagement metrics and create a follow-up plan to convert attendees into qualified leads"
+  modules:
+    - id: module-01
+      title: "Welcome to the island"
+      duration_min: 15
+      status: not_started
+    - id: module-02
+      title: "Prerequisites and logistics"
+      duration_min: 10
+      status: not_started
+    - id: module-03
+      title: "Deploy the environment"
+      duration_min: 20
+      status: not_started
+    - id: module-04
+      title: "Play the game"
+      duration_min: 45
+      status: not_started
+    - id: module-05
+      title: "From event to pipeline"
+      duration_min: 20
+      status: not_started
+    - id: module-06
+      title: "Wrap-up and next steps"
+      duration_min: 10
+      status: not_started
   environment:
     platform: ""               # ocp | rhel-vms — determines which sizing fields apply
     topology: ""               # shared-cluster | per-student | cnv-pool
@@ -79,7 +107,7 @@ tracking:
 approval_checklist:
 
   content:
-    prerequisites_verifiable: null
+    prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: ""
     design_overview: ""
