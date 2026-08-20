@@ -1,0 +1,14 @@
+site_name: Ansible Island Adventure
+docs_dir: publishing-house/spec
+nav:
+- Home: index.md
+- Design Spec: design.md
+- Modules:
+  - Module 1 - Welcome To The Island: modules/module-01-welcome-to-the-island.md
+  - Module 2 - Prerequisites And Logistics: modules/module-02-prerequisites-and-logistics.md
+  - Module 3 - Deploy The Environment: modules/module-03-deploy-the-environment.md
+  - Module 4 - Play The Game: modules/module-04-play-the-game.md
+  - Module 5 - From Event To Pipeline: modules/module-05-from-event-to-pipeline.md
+  - Module 6 - Wrap Up And Next Steps: modules/module-06-wrap-up-and-next-steps.md
+plugins:
+- techdocs-core
