@@ -33,10 +33,13 @@ Lab (hands-on)
 
 ## Products & Technologies
 
-- Red Hat Ansible Automation Platform
+- Red Hat Ansible Automation Platform 2.7
 - Red Hat OpenShift Container Platform
+- Red Hat OpenShift Dev Spaces
 - CTFd (open-source CTF scoring platform)
-- Gitea (open-source Git hosting)
+- Gitea (open-source Git hosting, via rhpds/gitea-operator)
+- MariaDB
+- Redis
 
 ## Module Map
 
@@ -69,13 +72,13 @@ Intermediate
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** TBD — confirmed in infrastructure phase
-- **Cluster type:** TBD — confirmed in infrastructure phase
-- **OCP version:** TBD — confirmed in infrastructure phase
-- **Topology:** TBD — confirmed in infrastructure phase
-- **Sizing:** TBD — confirmed in infrastructure phase
-- **Automation approach:** TBD — confirmed in infrastructure phase
-- **AI/MaaS:** TBD — confirmed in infrastructure phase
-- **External services:** TBD — confirmed in infrastructure phase
-- **AAP version:** TBD — confirmed in infrastructure phase
-- **Non-GA products:** TBD — confirmed in infrastructure phase
+- **Cloud provider:** AWS (ROSA open environment)
+- **Cluster type:** Multinode
+- **OCP version:** 4.20
+- **Topology:** Per-student (each student gets their own ROSA open environment)
+- **Sizing:** ROSA open environment defaults (control plane managed by ROSA)
+- **Automation approach:** Ansible (operators installed from redhat-operators; CTFd stack deployed via Ansible playbook with k8s module)
+- **AI/MaaS:** None
+- **External services:** registry.redhat.io (Red Hat operator images), github.com (rhpds/gitea-operator), docker.io (CTFd, MariaDB, Redis images)
+- **AAP version:** 2.7 (stable-2.7 channel)
+- **Non-GA products:** None (all products are GA)
