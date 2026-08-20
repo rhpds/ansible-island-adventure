@@ -110,8 +110,20 @@ approval_checklist:
     prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: "Existing CTF labs on the catalog are security-focused and participant-facing (DevSecOps investigation). No content teaches Red Hatters how to deploy, facilitate, and generate pipeline from the Ansible Island Adventure CTF platform for customer engagements."
-    design_overview: ""
-    module_summaries: []
+    design_overview: "A teach-the-teacher lab that enables Red Hatters (SAs, TAMs, partner engineers) to independently deploy, facilitate, and generate pipeline from Ansible Island Adventure — a gamified CTF competition built on Red Hat Ansible Automation Platform and OpenShift. The lab is already proven with customers; this session teaches the delivery workflow end-to-end."
+    module_summaries:
+      - title: "Welcome to the island"
+        overview: "Introduces the Ansible Island Adventure concept, pirate-themed narrative, challenge categories and difficulty tiers, and how gamification drives engagement across mixed skill levels."
+      - title: "Prerequisites and logistics"
+        overview: "Covers infrastructure requirements (RHDP OpenShift cluster), staffing ratios, pre-event preparation (environment ordering, credential generation, handouts), room setup, and event pacing."
+      - title: "Deploy the environment"
+        overview: "Hands-on deployment of CTFd, Gitea, MySQL, and Redis on OpenShift via a single Ansible playbook, followed by architecture review and post-deploy verification."
+      - title: "Play the game"
+        overview: "Core hands-on module where attendees play through all six challenge categories as participants would at a customer event, then debrief on scoring methodology and challenge effectiveness."
+      - title: "From event to pipeline"
+        overview: "Shifts to business outcomes: positioning the event for customers, capturing lead data through CTFd, analyzing engagement metrics, and building a targeted follow-up plan."
+      - title: "Wrap-up and next steps"
+        overview: "Provides access to the deployment repository and event assets, guidance on customizing challenges for specific audiences, and open Q&A."
     rcars_overlap_pct: 75
     rcars_top_matches:
       - title: "Unmasking the Attack - A DevSecOps CTF on OpenShift"
