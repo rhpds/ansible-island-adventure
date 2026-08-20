@@ -1,0 +1,35 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ansible-island-adventure
+  title: ansible-island-adventure
+  description: 'This is a "teach the teacher" course. The goal is to have our
+    session enable other Red Hatters to run CTF competitions around the product
+    (Ansible Automation Platform). '
+  annotations:
+    ph.rhdp.io/content-type: lab
+    ph.rhdp.io/deployment-mode: self_published
+    ph.rhdp.io/github-user: l3acon
+    ph.rhdp.io/owner: matferna@redhat.com
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: rhpds/ansible-island-adventure
+    ph.rhdp.io/created-at: 2026-08-20T18:23:00.265Z
+  tags:
+    - publishing-house
+    - lab
+    - self-published
+  links:
+    - url: https://github.com/rhpds/ansible-island-adventure
+      title: Repository
+      icon: github
+    - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/ansible-island-adventure
+      title: Open in DevSpaces
+      icon: catalog
+    - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
+      title: Central
+      icon: dashboard
+spec:
+  type: content
+  lifecycle: experimental
+  owner: rhdp-team
+  system: publishing-house
