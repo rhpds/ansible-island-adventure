@@ -3,9 +3,9 @@ kind: Component
 metadata:
   name: ansible-island-adventure
   title: ansible-island-adventure
-  description: 'This is a "teach the teacher" course. The goal is to have our
-    session enable other Red Hatters to run CTF competitions around the product
-    (Ansible Automation Platform). '
+  description: 'This is a "teach the teacher" course. The goal is to have our session
+    enable other Red Hatters to run CTF competitions around the product (Ansible Automation
+    Platform). '
   annotations:
     ph.rhdp.io/content-type: lab
     ph.rhdp.io/deployment-mode: rhdp_published
@@ -13,21 +13,24 @@ metadata:
     ph.rhdp.io/owner: matferna@redhat.com
     backstage.io/techdocs-ref: dir:.
     github.com/project-slug: rhpds/ansible-island-adventure
-    ph.rhdp.io/created-at: 2026-08-20T18:23:00.265Z
+    ph.rhdp.io/created-at: 2026-08-20 18:23:00.265000+00:00
   tags:
-    - publishing-house
-    - lab
-    - self-published
+  - publishing-house
+  - lab
+  - self-published
   links:
-    - url: https://github.com/rhpds/ansible-island-adventure
-      title: Repository
-      icon: github
-    - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/ansible-island-adventure
-      title: Open in DevSpaces
-      icon: catalog
-    - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
-      title: Central
-      icon: dashboard
+  - url: https://github.com/rhpds/ansible-island-adventure
+    title: Repository
+    icon: github
+  - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/ansible-island-adventure
+    title: Open in DevSpaces
+    icon: catalog
+  - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
+    title: Central
+    icon: dashboard
+  - url: https://redhat.atlassian.net/browse/RHDPCD-1137
+    title: Jira Epic
+    icon: dashboard
 spec:
   type: content
   lifecycle: experimental

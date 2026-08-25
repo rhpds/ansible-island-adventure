@@ -16,7 +16,7 @@ project:
   automation_type: "ansible"
   description: "This is a \"teach the teacher\" course. The goal is to have our session enable other Red Hatters to run CTF competitions around the product (Ansible Automation Platform). "
   # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: ""
+  jira_ticket: "RHDPCD-1137"
   workflow_id: "36b78964-d053-4dc4-87d9-4502d75cfc64"
 
 spec:
