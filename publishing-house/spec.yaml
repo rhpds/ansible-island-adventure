@@ -1,94 +1,85 @@
-# Publishing House — Project Spec
-# Lifecycle: intake → content_review → infra_review → jira_sync → development → ready → published
-# No secrets in this file. Tokens live in ~/.config/publishing-house/auth.json
-# Stage is managed by SonataFlow and cached in .ph-state — do not edit stage.current manually.
-# NOTE: This file is also in the template repo. The Scaffolder overlays project.* values.
-# TODO: Eliminate this copy — Scaffolder should pull from template repo directly.
-
 project:
-  slug: "ansible-island-adventure"
-  owner_email: "matferna@redhat.com"
-  content_type: "lab"
-  deployment_mode: "rhdp_published"
-  initiative_key: "rh1_2027"
-  showroom_type: "classic"
-  intake_type: "new"
-  automation_type: "ansible"
-  description: "This is a \"teach the teacher\" course. The goal is to have our session enable other Red Hatters to run CTF competitions around the product (Ansible Automation Platform). "
-  # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: "RHDPCD-1137"
-  workflow_id: "36b78964-d053-4dc4-87d9-4502d75cfc64"
-
+  slug: ansible-island-adventure
+  owner_email: matferna@redhat.com
+  content_type: lab
+  deployment_mode: rhdp_published
+  initiative_key: rh1_2027
+  showroom_type: classic
+  intake_type: new
+  automation_type: ansible
+  description: 'This is a "teach the teacher" course. The goal is to have our session
+    enable other Red Hatters to run CTF competitions around the product (Ansible Automation
+    Platform). '
+  jira_ticket: RHDPCD-1137
+  workflow_id: 36b78964-d053-4dc4-87d9-4502d75cfc64
 spec:
-  title: "Ansible Island Adventure"
+  title: Ansible Island Adventure
   learning_objectives:
-    - "Deploy the Ansible Island Adventure environment on a Red Hat OpenShift cluster by running the provided Ansible playbook to produce a fully functional CTFd scoring platform, Gitea repositories, and per-player credentials"
-    - "Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation guidance, handout templates, and pacing recommendations for groups of varying size and technical background"
-    - "Configure challenge definitions, difficulty tiers, and content to tailor the event for specific customer use cases or partner engagements"
-    - "Analyze participant engagement metrics and create a follow-up plan to convert attendees into qualified leads"
+  - Deploy the Ansible Island Adventure environment on a Red Hat OpenShift cluster
+    by running the provided Ansible playbook to produce a fully functional CTFd scoring
+    platform, Gitea repositories, and per-player credentials
+  - Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation
+    guidance, handout templates, and pacing recommendations for groups of varying
+    size and technical background
+  - Configure challenge definitions, difficulty tiers, and content to tailor the event
+    for specific customer use cases or partner engagements
+  - Analyze participant engagement metrics and create a follow-up plan to convert
+    attendees into qualified leads
   modules:
-    - id: module-01
-      title: "Welcome to the island"
-      duration_min: 15
-      status: not_started
-    - id: module-02
-      title: "Prerequisites and logistics"
-      duration_min: 10
-      status: not_started
-    - id: module-03
-      title: "Deploy the environment"
-      duration_min: 20
-      status: not_started
-    - id: module-04
-      title: "Play the game"
-      duration_min: 45
-      status: not_started
-    - id: module-05
-      title: "From event to pipeline"
-      duration_min: 20
-      status: not_started
-    - id: module-06
-      title: "Wrap-up and next steps"
-      duration_min: 10
-      status: not_started
+  - id: module-01
+    title: Welcome to the island
+    duration_min: 15
+    status: not_started
+  - id: module-02
+    title: Prerequisites and logistics
+    duration_min: 10
+    status: not_started
+  - id: module-03
+    title: Deploy the environment
+    duration_min: 20
+    status: not_started
+  - id: module-04
+    title: Play the game
+    duration_min: 45
+    status: not_started
+  - id: module-05
+    title: From event to pipeline
+    duration_min: 20
+    status: not_started
+  - id: module-06
+    title: Wrap-up and next steps
+    duration_min: 10
+    status: not_started
   environment:
-    platform: "ocp"            # ocp | rhel-vms — determines which sizing fields apply
-    topology: "per-student"    # shared-cluster | per-student | cnv-pool
-    cloud_provider: aws        # cnv | aws | troshka — ROSA open environment
-    max_concurrent_users: null # required if topology = shared-cluster
-
-    # --- OCP-specific fields (only when platform = ocp) ---
-    ocp_version: "4.20"                # e.g. 4.20 — minimum 4.20; leave empty for rhel-vms
-    cluster_type: "multinode"          # sno | multinode — only for platform = ocp
-    control_plane_instance_count: null # managed by ROSA
-    control_plane_cpu: null            # managed by ROSA
-    control_plane_ram_gb: null         # managed by ROSA
-    worker_count: null                 # ROSA open environment default
-    worker_cpu: null                   # ROSA open environment default
-    worker_ram_gb: null                # ROSA open environment default
-    worker_disk_gb: null               # ROSA open environment default
-
-    # --- VM-specific fields (only when platform = rhel-vms) ---
-    # Each entry: {role, count, cpu, ram_gb, disk_gb, os}
+    platform: ocp
+    topology: per-student
+    cloud_provider: aws
+    max_concurrent_users: null
+    ocp_version: '4.20'
+    cluster_type: multinode
+    control_plane_instance_count: null
+    control_plane_cpu: null
+    control_plane_ram_gb: null
+    worker_count: null
+    worker_cpu: null
+    worker_ram_gb: null
+    worker_disk_gb: null
     vms_per_student: []
-
-    # --- Common fields (both platforms) ---
-    aap_version: "2.7"                 # required if AAP in products
-    ai_requirement: "none"             # maas | gpu | none
-    ai_model_tier: ""                  # open-source | frontier (if ai_requirement = maas or gpu)
-    ai_model_name: ""                  # specific model e.g. granite-3.1-8b
-    ai_justification: ""               # required if ai_model_tier = frontier or ai_requirement = gpu
-    non_ga_products: []                # list of non-GA products/versions
-    non_ga_access_plan: ""             # how access is provided for non-GA products
-    external_services:                 # named external service dependencies
-      - "registry.redhat.io"
-      - "github.com"
-      - "docker.io"
-    gpu_nodes: 0                       # number of GPU nodes (0 = none)
-    gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
+    aap_version: '2.7'
+    ai_requirement: none
+    ai_model_tier: ''
+    ai_model_name: ''
+    ai_justification: ''
+    non_ga_products: []
+    non_ga_access_plan: ''
+    external_services:
+    - registry.redhat.io
+    - github.com
+    - docker.io
+    gpu_nodes: 0
+    gpu_type: ''
   duration_hours: 2
-  audience: "intermediate"   # beginner | intermediate | advanced
-
+  audience: intermediate
 development:
   automation:
     ansible:
@@ -97,54 +88,78 @@ development:
     status: not_started
   healthCheck:
     status: not_started
-
 compliance:
   last_hard_check: null
   hard_result: null
-
 tracking:
   paused: false
   pause_reason: null
-
-# Approval checklist — filled collaboratively by author + skill + system + reviewers
 approval_checklist:
-
   content:
     prerequisites_verifiable: false
-    assessment_strategy: ""
-    catalog_gap: "Existing CTF labs on the catalog are security-focused and participant-facing (DevSecOps investigation). No content teaches Red Hatters how to deploy, facilitate, and generate pipeline from the Ansible Island Adventure CTF platform for customer engagements."
-    design_overview: "A teach-the-teacher lab that enables Red Hatters (SAs, TAMs, partner engineers) to independently deploy, facilitate, and generate pipeline from Ansible Island Adventure — a gamified CTF competition built on Red Hat Ansible Automation Platform and OpenShift. The lab is already proven with customers; this session teaches the delivery workflow end-to-end."
+    assessment_strategy: ''
+    catalog_gap: Existing CTF labs on the catalog are security-focused and participant-facing
+      (DevSecOps investigation). No content teaches Red Hatters how to deploy, facilitate,
+      and generate pipeline from the Ansible Island Adventure CTF platform for customer
+      engagements.
+    design_overview: "A teach-the-teacher lab that enables Red Hatters (SAs, TAMs,\
+      \ partner engineers) to independently deploy, facilitate, and generate pipeline\
+      \ from Ansible Island Adventure \u2014 a gamified CTF competition built on Red\
+      \ Hat Ansible Automation Platform and OpenShift. The lab is already proven with\
+      \ customers; this session teaches the delivery workflow end-to-end."
     module_summaries:
-      - title: "Welcome to the island"
-        overview: "Introduces the Ansible Island Adventure concept, pirate-themed narrative, challenge categories and difficulty tiers, and how gamification drives engagement across mixed skill levels."
-      - title: "Prerequisites and logistics"
-        overview: "Covers infrastructure requirements (RHDP OpenShift cluster), staffing ratios, pre-event preparation (environment ordering, credential generation, handouts), room setup, and event pacing."
-      - title: "Deploy the environment"
-        overview: "Hands-on deployment of CTFd, Gitea, MySQL, and Redis on OpenShift via a single Ansible playbook, followed by architecture review and post-deploy verification."
-      - title: "Play the game"
-        overview: "Core hands-on module where attendees play through all six challenge categories as participants would at a customer event, then debrief on scoring methodology and challenge effectiveness."
-      - title: "From event to pipeline"
-        overview: "Shifts to business outcomes: positioning the event for customers, capturing lead data through CTFd, analyzing engagement metrics, and building a targeted follow-up plan."
-      - title: "Wrap-up and next steps"
-        overview: "Provides access to the deployment repository and event assets, guidance on customizing challenges for specific audiences, and open Q&A."
+    - title: Welcome to the island
+      overview: Introduces the Ansible Island Adventure concept, pirate-themed narrative,
+        challenge categories and difficulty tiers, and how gamification drives engagement
+        across mixed skill levels.
+    - title: Prerequisites and logistics
+      overview: Covers infrastructure requirements (RHDP OpenShift cluster), staffing
+        ratios, pre-event preparation (environment ordering, credential generation,
+        handouts), room setup, and event pacing.
+    - title: Deploy the environment
+      overview: Hands-on deployment of CTFd, Gitea, MySQL, and Redis on OpenShift
+        via a single Ansible playbook, followed by architecture review and post-deploy
+        verification.
+    - title: Play the game
+      overview: Core hands-on module where attendees play through all six challenge
+        categories as participants would at a customer event, then debrief on scoring
+        methodology and challenge effectiveness.
+    - title: From event to pipeline
+      overview: 'Shifts to business outcomes: positioning the event for customers,
+        capturing lead data through CTFd, analyzing engagement metrics, and building
+        a targeted follow-up plan.'
+    - title: Wrap-up and next steps
+      overview: Provides access to the deployment repository and event assets, guidance
+        on customizing challenges for specific audiences, and open Q&A.
     rcars_overlap_pct: 75
     rcars_top_matches:
-      - title: "Unmasking the Attack - A DevSecOps CTF on OpenShift"
-        ci_name: "sandboxes-gpte.devsecops-ctf-on-openshift.prod"
-        url: "https://catalog.demo.redhat.com/catalog?item=sandboxes-gpte.devsecops-ctf-on-openshift.prod"
-        relevance_score: 75
-        why_it_fits: "CTF-style workshop on OpenShift with hands-on investigation experience, but focuses on DevSecOps security rather than Ansible Automation Platform or CTF facilitation training."
-      - title: "Code Red: The Breach Challenge!"
-        ci_name: "published.code-red-breach-challenge.prod"
-        url: "https://catalog.demo.redhat.com/catalog?item=published.code-red-breach-challenge.prod"
-        relevance_score: 74
-        why_it_fits: "CTF-format lab on OpenShift teaching participants to investigate security vulnerabilities, but is participant-facing rather than facilitator-training for deploying the Ansible Island Adventure platform."
-    rejections: []
-
+    - title: Unmasking the Attack - A DevSecOps CTF on OpenShift
+      ci_name: sandboxes-gpte.devsecops-ctf-on-openshift.prod
+      url: https://catalog.demo.redhat.com/catalog?item=sandboxes-gpte.devsecops-ctf-on-openshift.prod
+      relevance_score: 75
+      why_it_fits: CTF-style workshop on OpenShift with hands-on investigation experience,
+        but focuses on DevSecOps security rather than Ansible Automation Platform
+        or CTF facilitation training.
+    - title: 'Code Red: The Breach Challenge!'
+      ci_name: published.code-red-breach-challenge.prod
+      url: https://catalog.demo.redhat.com/catalog?item=published.code-red-breach-challenge.prod
+      relevance_score: 74
+      why_it_fits: CTF-format lab on OpenShift teaching participants to investigate
+        security vulnerabilities, but is participant-facing rather than facilitator-training
+        for deploying the Ansible Island Adventure platform.
+    rejections:
+    - id: d3ea0a5f-271f-43ba-b45c-e3663e3ef468
+      text: I would like this to start with Ansible Island Adventure deployed. The
+        lab should focus on A) how to use and deliver it and B) how to change/modify
+        it. We should not want people to have to install this on their own, but rather
+        order it as a supported item from RHDP.
+      resolved: false
+      reviewer: nstephan@redhat.com
+      timestamp: '2026-08-26T10:27:14.776334+00:00'
   infra:
     peak_environments: null
-    cost_per_run_est: ""
-    provisioning_time_est: ""
-    agnosticv_base_ci: ""
-    approved_by: ""
+    cost_per_run_est: ''
+    provisioning_time_est: ''
+    agnosticv_base_ci: ''
+    approved_by: ''
     rejections: []
