@@ -38,7 +38,7 @@ This module introduces the Ansible Island Adventure concept and its pirate-theme
 - Ansible Island Adventure is a proven, customer-facing CTF event built around Red Hat Ansible Automation Platform
 - The pirate-themed narrative and gamified challenge structure drive higher engagement than traditional workshops
 - Multiple difficulty tiers ensure participants at all skill levels — from beginners to experts — stay engaged
-- The event is already built and proven with customers; this lab teaches how to deploy and deliver it independently
+- The event is already built and proven with customers; this lab teaches how to use, deliver, and customize it independently
 
 ### Infrastructure Notes
 

@@ -7,7 +7,7 @@ This is the core hands-on module. Attendees receive handouts and play through An
 ### Audience and Time
 
 - **Personas:** Solution Architects, TAMs, partner engineers
-- **Prerequisites for this module:** Completion of Module 3 (environment deployed and verified); working knowledge of Ansible playbooks, roles, and inventories; basic familiarity with the Ansible Automation Platform controller
+- **Prerequisites for this module:** Completion of Module 3 (environment explored and verified); working knowledge of Ansible playbooks, roles, and inventories; basic familiarity with the Ansible Automation Platform controller
 - **Estimated duration:** 45 minutes
 
 ### Learning Objectives
@@ -52,7 +52,7 @@ This is the core hands-on module. Attendees receive handouts and play through An
 
 ### Infrastructure Notes
 
-- Each participant uses their own player credentials generated during Module 3
+- Each participant uses their own player credentials provided by the pre-deployed environment
 - Challenges interact with CTFd (flag submission and scoring), Gitea (repository cloning), VSCode Server (CLI work), and the Ansible Automation Platform controller (projects, templates, credentials)
 - The Side Quest (Ansible Quest video game) runs as a separate application accessible via an OpenShift route
-- All challenge infrastructure was deployed in Module 3 and should be fully operational
+- All challenge infrastructure is pre-deployed by RHDP and should be fully operational
