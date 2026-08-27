@@ -15,14 +15,15 @@ project:
 spec:
   title: Ansible Island Adventure
   learning_objectives:
-  - Deploy the Ansible Island Adventure environment on a Red Hat OpenShift cluster
-    by running the provided Ansible playbook to produce a fully functional CTFd scoring
-    platform, Gitea repositories, and per-player credentials
+  - Navigate the pre-deployed Ansible Island Adventure environment on Red Hat OpenShift,
+    identifying the architecture components (CTFd, Gitea, MariaDB, Redis, AAP, Dev Spaces)
+    and understanding the deployment artifacts that provisioned them
   - Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation
     guidance, handout templates, and pacing recommendations for groups of varying
     size and technical background
   - Configure challenge definitions, difficulty tiers, and content to tailor the event
-    for specific customer use cases or partner engagements
+    for specific customer use cases or partner engagements, and re-deploy changes
+    using the idempotent Ansible playbook
   - Analyze participant engagement metrics and create a follow-up plan to convert
     attendees into qualified leads
   modules:
@@ -35,20 +36,20 @@ spec:
     duration_min: 10
     status: not_started
   - id: module-03
-    title: Deploy the environment
-    duration_min: 20
+    title: Explore the environment
+    duration_min: 15
     status: not_started
   - id: module-04
     title: Play the game
     duration_min: 45
     status: not_started
   - id: module-05
-    title: From event to pipeline
+    title: Customize and extend
     duration_min: 20
     status: not_started
   - id: module-06
-    title: Wrap-up and next steps
-    duration_min: 10
+    title: From event to pipeline
+    duration_min: 15
     status: not_started
   environment:
     platform: ocp
@@ -103,34 +104,35 @@ approval_checklist:
       and generate pipeline from the Ansible Island Adventure CTF platform for customer
       engagements.
     design_overview: "A teach-the-teacher lab that enables Red Hatters (SAs, TAMs,\
-      \ partner engineers) to independently deploy, facilitate, and generate pipeline\
-      \ from Ansible Island Adventure \u2014 a gamified CTF competition built on Red\
-      \ Hat Ansible Automation Platform and OpenShift. The lab is already proven with\
-      \ customers; this session teaches the delivery workflow end-to-end."
+      \ partner engineers) to use, deliver, and customize Ansible Island Adventure\
+      \ \u2014 a gamified CTF competition built on Red Hat Ansible Automation Platform\
+      \ and OpenShift. The environment arrives pre-deployed from RHDP; the lab focuses\
+      \ on facilitation, customization, and pipeline generation."
     module_summaries:
     - title: Welcome to the island
       overview: Introduces the Ansible Island Adventure concept, pirate-themed narrative,
         challenge categories and difficulty tiers, and how gamification drives engagement
         across mixed skill levels.
     - title: Prerequisites and logistics
-      overview: Covers infrastructure requirements (RHDP OpenShift cluster), staffing
-        ratios, pre-event preparation (environment ordering, credential generation,
-        handouts), room setup, and event pacing.
-    - title: Deploy the environment
-      overview: Hands-on deployment of CTFd, Gitea, MySQL, and Redis on OpenShift
-        via a single Ansible playbook, followed by architecture review and post-deploy
-        verification.
+      overview: Covers ordering the pre-deployed environment from RHDP, staffing ratios,
+        pre-event preparation (credential distribution, handouts), room setup, and
+        event pacing.
+    - title: Explore the environment
+      overview: Tour of the pre-deployed architecture (CTFd, Gitea, AAP, Dev Spaces,
+        managed nodes) on OpenShift, review of deployment artifacts (rosa.creds, player.creds,
+        keys/, playbook structure), and understanding the RHDP ordering workflow.
     - title: Play the game
       overview: Core hands-on module where attendees play through all six challenge
         categories as participants would at a customer event, then debrief on scoring
         methodology and challenge effectiveness.
+    - title: Customize and extend
+      overview: Modify challenge definitions and difficulty tiers, re-run the idempotent
+        deployer to apply changes, understand state coordination (cached credentials
+        vs. runtime data), and take deployment artifacts to own RHDP-ordered environments.
     - title: From event to pipeline
-      overview: 'Shifts to business outcomes: positioning the event for customers,
-        capturing lead data through CTFd, analyzing engagement metrics, and building
-        a targeted follow-up plan.'
-    - title: Wrap-up and next steps
-      overview: Provides access to the deployment repository and event assets, guidance
-        on customizing challenges for specific audiences, and open Q&A.
+      overview: 'Positioning the event for customers, capturing lead data through CTFd,
+        analyzing engagement metrics, building a follow-up plan, and accessing resources
+        for independent delivery.'
     rcars_overlap_pct: 75
     rcars_top_matches:
     - title: Unmasking the Attack - A DevSecOps CTF on OpenShift
