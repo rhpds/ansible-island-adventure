@@ -155,7 +155,7 @@ approval_checklist:
         lab should focus on A) how to use and deliver it and B) how to change/modify
         it. We should not want people to have to install this on their own, but rather
         order it as a supported item from RHDP.
-      resolved: false
+      resolved: true
       reviewer: nstephan@redhat.com
       timestamp: '2026-08-26T10:27:14.776334+00:00'
   infra:
