@@ -1,0 +1,87 @@
+---
+# Configure a per-instructor organization in the shared AAP Controller.
+# Creates the org, an instructor user, and grants Organization Admin role.
+
+- name: "{{ instructor.name }} — Create AAP organization"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/v2/organizations/"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ instructor.name }}"
+      description: "Organization for instructor {{ instructor.name }}"
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 400]
+  register: _aap_org
+  retries: 5
+  delay: 5
+  until: _aap_org.status in [201, 400]
+
+- name: "{{ instructor.name }} — Look up organization ID"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/v2/organizations/?name={{ instructor.name }}"
+    method: GET
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: _aap_org_lookup
+
+- name: "{{ instructor.name }} — Set org ID fact"
+  ansible.builtin.set_fact:
+    _org_id: "{{ _aap_org_lookup.json.results[0].id }}"
+
+- name: "{{ instructor.name }} — Create AAP user for instructor"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/v2/users/"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ instructor.name }}"
+      password: "{{ instructor.password }}"
+      email: "{{ instructor.name }}@island.local"
+      first_name: "{{ instructor.name }}"
+      is_superuser: false
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 400]
+  register: _aap_user
+
+- name: "{{ instructor.name }} — Look up AAP user ID"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/v2/users/?username={{ instructor.name }}"
+    method: GET
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: _aap_user_lookup
+
+- name: "{{ instructor.name }} — Set user ID fact"
+  ansible.builtin.set_fact:
+    _user_id: "{{ _aap_user_lookup.json.results[0].id }}"
+
+- name: "{{ instructor.name }} — Add instructor as organization admin"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/v2/organizations/{{ _org_id }}/admins/"
+    method: POST
+    body_format: json
+    body:
+      id: "{{ _user_id }}"
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [204, 200, 400, 409]
+
+- name: "{{ instructor.name }} — Report AAP org configured"
+  ansible.builtin.debug:
+    msg: >-
+      AAP org '{{ instructor.name }}' created (id={{ _org_id }}).
+      User '{{ instructor.name }}' granted Org Admin.
+      Login: {{ aap_url }} with {{ instructor.name }} / {{ instructor.password }}

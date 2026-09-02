@@ -1,0 +1,214 @@
+---
+# ── AAP Operator ─────────────────────────────────────────────────
+- name: Create AAP operator namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ansible-automation-platform
+
+- name: Create AAP OperatorGroup
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: aap-operator-group
+        namespace: ansible-automation-platform
+      spec:
+        targetNamespaces:
+          - ansible-automation-platform
+
+- name: Install AAP Operator subscription
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: ansible-automation-platform-operator
+        namespace: ansible-automation-platform
+      spec:
+        channel: "{{ aap_channel }}"
+        installPlanApproval: Automatic
+        name: ansible-automation-platform-operator
+        source: "{{ aap_source }}"
+        sourceNamespace: openshift-marketplace
+
+# ── Dev Spaces Operator ──────────────────────────────────────────
+- name: Install Dev Spaces Operator subscription
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: devspaces
+        namespace: openshift-operators
+      spec:
+        channel: "{{ devspaces_channel }}"
+        installPlanApproval: Automatic
+        name: devspaces
+        source: "{{ devspaces_source }}"
+        sourceNamespace: openshift-marketplace
+
+# ── Wait for Operators ───────────────────────────────────────────
+- name: Wait for AAP Operator CSV to succeed
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: ansible-automation-platform
+  register: _aap_csv
+  until: >-
+    _aap_csv.resources | selectattr('metadata.name', 'match', '^aap-operator') | list | length > 0 and
+    (_aap_csv.resources | selectattr('metadata.name', 'match', '^aap-operator') | list)[0].status.phase | default('') == 'Succeeded'
+  retries: "{{ k8s_retries }}"
+  delay: "{{ k8s_retry_delay }}"
+
+- name: Wait for Dev Spaces Operator CSV to succeed
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: openshift-operators
+  register: _devspaces_csv
+  until: >-
+    _devspaces_csv.resources | selectattr('metadata.name', 'match', '^devspacesoperator') | list | length > 0 and
+    (_devspaces_csv.resources | selectattr('metadata.name', 'match', '^devspacesoperator') | list)[0].status.phase | default('') == 'Succeeded'
+  retries: "{{ k8s_retries }}"
+  delay: "{{ k8s_retry_delay }}"
+
+# ── Shared AAP Controller Instance ───────────────────────────────
+- name: Deploy shared AutomationController
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: automationcontroller.ansible.com/v1beta1
+      kind: AutomationController
+      metadata:
+        name: controller
+        namespace: ansible-automation-platform
+      spec:
+        replicas: 1
+        admin_user: admin
+        admin_email: admin@island.local
+        create_preload_data: true
+        route_tls_termination_mechanism: Edge
+        garbage_collect_secrets: true
+        ingress_type: Route
+        route_host: "aap.{{ cluster_apps_domain }}"
+        image_pull_policy: IfNotPresent
+        web:
+          replicas: 1
+          resource_requirements:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 2Gi
+        task:
+          replicas: 1
+          resource_requirements:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 2Gi
+        postgres_resource_requirements:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        redis_resource_requirements:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+
+- name: Wait for AAP admin password secret to exist
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: controller-admin-password
+    namespace: ansible-automation-platform
+  register: _aap_admin_secret
+  until: _aap_admin_secret.resources | length > 0
+  retries: 60
+  delay: 15
+
+- name: Set AAP connection facts
+  ansible.builtin.set_fact:
+    aap_url: "https://aap.{{ cluster_apps_domain }}"
+    aap_admin_password: "{{ _aap_admin_secret.resources[0].data.password | b64decode }}"
+
+- name: Wait for AAP API to be reachable
+  ansible.builtin.uri:
+    url: "https://aap.{{ cluster_apps_domain }}/api/v2/ping/"
+    method: GET
+    validate_certs: false
+    status_code: [200]
+  register: _aap_ping
+  until: _aap_ping.status | default(0) == 200
+  retries: 60
+  delay: 15
+
+# ── Dev Spaces ───────────────────────────────────────────────────
+- name: Create openshift-devspaces namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: openshift-devspaces
+
+- name: Deploy CheCluster for Dev Spaces
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: org.eclipse.che/v2
+      kind: CheCluster
+      metadata:
+        name: devspaces
+        namespace: openshift-devspaces
+      spec:
+        components:
+          cheServer:
+            debug: false
+          dashboard: {}
+          devfileRegistry: {}
+          pluginRegistry: {}
+        devEnvironments:
+          defaultNamespace:
+            autoProvision: true
+          storage:
+            pvcStrategy: per-user
+        networking: {}
+
+- name: Wait for CheCluster to be ready
+  kubernetes.core.k8s_info:
+    api_version: org.eclipse.che/v2
+    kind: CheCluster
+    name: devspaces
+    namespace: openshift-devspaces
+  register: _che
+  until: >-
+    _che.resources | length > 0 and
+    (_che.resources[0].status.chePhase | default('')) == 'Active'
+  retries: 60
+  delay: 15
+
+- name: Report cluster setup complete
+  ansible.builtin.debug:
+    msg: >-
+      Cluster setup complete —
+      AAP Controller at {{ aap_url }},
+      Dev Spaces at {{ _che.resources[0].status.cheURL | default('pending') }}
