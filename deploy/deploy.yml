@@ -1,0 +1,114 @@
+---
+- name: Deploy Ansible Island Adventure (CNV Multi-Instructor)
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars_files:
+    - vars/main.yml
+
+  pre_tasks:
+    - name: Load CNV resource claim
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../.cnv.env"
+        name: cnv_claim
+
+    - name: Extract cluster credentials from provision data
+      ansible.builtin.set_fact:
+        cluster_api_url: "{{ cnv_claim.status.summary.provision_data.openshift_api_url }}"
+        cluster_admin_username: "{{ cnv_claim.status.summary.provision_data.openshift_cluster_admin_username }}"
+        cluster_admin_password: "{{ cnv_claim.status.summary.provision_data.openshift_cluster_admin_password }}"
+        cluster_admin_token: "{{ cnv_claim.status.summary.provision_data.openshift_cluster_admin_token }}"
+        cluster_apps_domain: "{{ cnv_claim.status.summary.provision_data.openshift_cluster_ingress_domain }}"
+        cluster_users: "{{ cnv_claim.status.summary.provision_data.users }}"
+        keycloak_url: "{{ cnv_claim.status.summary.provision_data.keycloak_admin_console }}"
+        keycloak_admin_user: "{{ cnv_claim.status.summary.provision_data.keycloak_admin_user }}"
+        keycloak_admin_password: "{{ cnv_claim.status.summary.provision_data.keycloak_admin_password }}"
+
+    - name: Login to OpenShift as cluster-admin
+      ansible.builtin.command:
+        argv:
+          - oc
+          - login
+          - "{{ cluster_api_url }}"
+          - "--username={{ cluster_admin_username }}"
+          - "--password={{ cluster_admin_password }}"
+          - --insecure-skip-tls-verify=true
+      changed_when: true
+
+    - name: Determine which users are instructors
+      ansible.builtin.set_fact:
+        _active_instructor_users: >-
+          {{ instructor_users if (instructor_users | length > 0)
+             else (cluster_users | dict2items | map(attribute='key') | sort | list) }}
+
+    - name: Build instructor list with student definitions
+      ansible.builtin.set_fact:
+        instructors: >-
+          {{ instructors | default([]) + [{
+            'name': item,
+            'password': cluster_users[item].password,
+            'ctfd_ns': item ~ '-' ~ ctfd_ns_suffix,
+            'lab_ns': item ~ '-' ~ lab_ns_suffix,
+            'students': _students
+          }] }}
+      vars:
+        _students: >-
+          {{ range(1, students_per_instructor + 1) | map('regex_replace', '^(.*)$',
+             item ~ '-student\1') | list }}
+      loop: "{{ _active_instructor_users }}"
+
+    - name: Display deployment plan
+      ansible.builtin.debug:
+        msg: >-
+          Deploying for {{ instructors | length }} instructors
+          ({{ instructors | map(attribute='name') | join(', ') }})
+          with {{ students_per_instructor }} students each
+          on {{ cluster_api_url }}
+          (apps: {{ cluster_apps_domain }})
+
+  tasks:
+    # ── Phase 0: Cluster-wide setup ──────────────────────────────
+    - name: "Phase 0: Cluster-wide operator and service setup"
+      ansible.builtin.include_role:
+        name: cluster_setup
+
+    - name: "Phase 0: Deploy shared Gitea instance"
+      ansible.builtin.include_role:
+        name: shared_gitea
+
+    # ── Phase 1: Per-instructor infrastructure ───────────────────
+    - name: "Phase 1: Deploy per-instructor infrastructure"
+      ansible.builtin.include_role:
+        name: instructor
+      loop: "{{ instructors }}"
+      loop_control:
+        loop_var: instructor
+        label: "{{ instructor.name }}"
+
+    # ── Phase 2: Post-deploy configuration ───────────────────────
+    # TODO: configure_gitea — create student users/repos via Gitea API
+    # TODO: configure_ctfd — upload CTFd archive per instructor
+    # TODO: configure_aap — seed inventory/creds/users via AAP API
+
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg: |
+          ══════════════════════════════════════════════════
+           Ansible Island Adventure — Deployment Complete
+          ══════════════════════════════════════════════════
+
+          Shared Services:
+            Gitea:      https://gitea-{{ gitea_namespace }}.{{ cluster_apps_domain }}
+            AAP:        {{ aap_url }}
+
+          Per-Instructor URLs:
+          {% for inst in instructors %}
+            {{ inst.name }}:
+              CTFd:     https://island-{{ inst.ctfd_ns }}.{{ cluster_apps_domain }}
+              Verifier: https://verifier-{{ inst.ctfd_ns }}.{{ cluster_apps_domain }}
+              AAP Org:  {{ inst.name }}
+          {% endfor %}
+
+          Console:      {{ cnv_claim.status.summary.provision_data.openshift_console_url }}
+          ══════════════════════════════════════════════════
