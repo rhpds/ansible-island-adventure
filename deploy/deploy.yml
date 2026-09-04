@@ -101,6 +101,10 @@
       ansible.builtin.include_role:
         name: configure_aap
 
+    - name: "Phase 2: Create student Keycloak users for Dev Spaces"
+      ansible.builtin.include_role:
+        name: configure_keycloak
+
     # ── Phase 3: Instructor handouts (set_stats for lab env) ────────
     - name: Build per-instructor handout data
       ansible.builtin.set_fact:
