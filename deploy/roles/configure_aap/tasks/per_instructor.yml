@@ -106,6 +106,37 @@
   loop: "{{ _inst.students }}"
   no_log: true
 
+- name: "{{ _inst.name }} — Look up student AAP user IDs"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/gateway/v1/users/?username={{ item }}"
+    method: GET
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: _aap_student_lookups
+  loop: "{{ _inst.students }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: "{{ _inst.name }} — Update student AAP passwords"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/gateway/v1/users/{{ _aap_student_lookups.results[idx].json.results[0].id }}/"
+    method: PATCH
+    body_format: json
+    body:
+      password: "{{ _all_student_creds[_inst.name].students[item] }}"
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+  loop: "{{ _inst.students }}"
+  loop_control:
+    index_var: idx
+    label: "{{ item }}"
+  no_log: true
+
 - name: "{{ _inst.name }} — Look up student user IDs and add to org"
   ansible.builtin.include_tasks: add_student_to_org.yml
   loop: "{{ _inst.students }}"
