@@ -7,7 +7,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: ansible-automation-platform
+        name: aap
 
 - name: Create AAP OperatorGroup
   kubernetes.core.k8s:
@@ -17,10 +17,10 @@
       kind: OperatorGroup
       metadata:
         name: aap-operator-group
-        namespace: ansible-automation-platform
+        namespace: aap
       spec:
         targetNamespaces:
-          - ansible-automation-platform
+          - aap
 
 - name: Install AAP Operator subscription
   kubernetes.core.k8s:
@@ -30,7 +30,7 @@
       kind: Subscription
       metadata:
         name: ansible-automation-platform-operator
-        namespace: ansible-automation-platform
+        namespace: aap
       spec:
         channel: "{{ aap_channel }}"
         installPlanApproval: Automatic
@@ -60,7 +60,7 @@
   kubernetes.core.k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
-    namespace: ansible-automation-platform
+    namespace: aap
   register: _aap_csv
   until: >-
     _aap_csv.resources | selectattr('metadata.name', 'match', '^aap-operator') | list | length > 0 and
@@ -80,85 +80,139 @@
   retries: "{{ k8s_retries }}"
   delay: "{{ k8s_retry_delay }}"
 
-# ── Shared AAP Controller Instance ───────────────────────────────
-- name: Deploy shared AutomationController
+# ── Shared AAP Platform Instance (Gateway + Controller + Hub) ────
+- name: Deploy AnsibleAutomationPlatform CR
   kubernetes.core.k8s:
     state: present
     definition:
-      apiVersion: automationcontroller.ansible.com/v1beta1
-      kind: AutomationController
+      apiVersion: aap.ansible.com/v1alpha1
+      kind: AnsibleAutomationPlatform
       metadata:
-        name: controller
-        namespace: ansible-automation-platform
+        name: aap
+        namespace: aap
       spec:
-        replicas: 1
-        admin_user: admin
-        admin_email: admin@island.local
-        create_preload_data: true
-        route_tls_termination_mechanism: Edge
-        garbage_collect_secrets: true
-        ingress_type: Route
-        route_host: "aap.{{ cluster_apps_domain }}"
-        image_pull_policy: IfNotPresent
-        web:
+        # Gateway is the single entry point
+        gateway:
           replicas: 1
-          resource_requirements:
-            requests:
-              cpu: 200m
-              memory: 512Mi
-            limits:
-              cpu: '1'
-              memory: 2Gi
-        task:
+        # Automation Controller
+        controller:
           replicas: 1
-          resource_requirements:
-            requests:
-              cpu: 200m
-              memory: 512Mi
-            limits:
-              cpu: '1'
-              memory: 2Gi
-        postgres_resource_requirements:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            cpu: 500m
-            memory: 1Gi
-        redis_resource_requirements:
-          requests:
-            cpu: 50m
-            memory: 128Mi
-          limits:
-            cpu: 250m
-            memory: 256Mi
+          disabled: false
+        # Automation Hub (disabled to save resources)
+        hub:
+          disabled: true
+        # EDA (disabled to save resources)
+        eda:
+          disabled: true
+        # Lightspeed (disabled)
+        lightspeed:
+          disabled: true
 
 - name: Wait for AAP admin password secret to exist
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Secret
-    name: controller-admin-password
-    namespace: ansible-automation-platform
-  register: _aap_admin_secret
-  until: _aap_admin_secret.resources | length > 0
-  retries: 60
+    namespace: aap
+  register: _aap_secrets
+  until: >-
+    _aap_secrets.resources
+      | selectattr('metadata.name', 'match', '.*-admin-password$')
+      | list | length > 0
+  retries: 90
   delay: 15
+
+- name: Identify the admin password secret
+  ansible.builtin.set_fact:
+    _admin_secret_name: >-
+      {{ (_aap_secrets.resources
+          | selectattr('metadata.name', 'match', '.*-admin-password$')
+          | list)[0].metadata.name }}
+
+- name: Get AAP admin password
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ _admin_secret_name }}"
+    namespace: aap
+  register: _aap_admin_secret
+
+- name: Discover AAP gateway route
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    namespace: aap
+    label_selectors: []
+  register: _aap_routes
 
 - name: Set AAP connection facts
   ansible.builtin.set_fact:
-    aap_url: "https://aap.{{ cluster_apps_domain }}"
     aap_admin_password: "{{ _aap_admin_secret.resources[0].data.password | b64decode }}"
+    aap_url: >-
+      https://{{ (_aap_routes.resources
+        | selectattr('metadata.name', 'match', '.*gateway.*|^aap.*')
+        | first).spec.host }}
 
-- name: Wait for AAP API to be reachable
+- name: Wait for AAP Gateway API to be reachable
   ansible.builtin.uri:
-    url: "https://aap.{{ cluster_apps_domain }}/api/v2/ping/"
+    url: "{{ aap_url }}/api/gateway/v1/ping/"
     method: GET
     validate_certs: false
     status_code: [200]
   register: _aap_ping
   until: _aap_ping.status | default(0) == 200
+  retries: 90
+  delay: 15
+
+- name: Wait for AAP Controller API through gateway
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/controller/v2/ping/"
+    method: GET
+    validate_certs: false
+    status_code: [200]
+  register: _aap_controller_ping
+  until: _aap_controller_ping.status | default(0) == 200
   retries: 60
   delay: 15
+
+# ── AAP License Manifest ─────────────────────────────────────────
+- name: Check if AAP license is already applied
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/controller/v2/config/"
+    method: GET
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200, 402, 403]
+  register: _aap_config
+
+- name: Upload AAP subscription manifest
+  when: >-
+    _aap_config.json.license_info.valid_key | default(false) != true
+  block:
+    - name: Read manifest file
+      ansible.builtin.slurp:
+        src: "{{ aap_manifest_path }}"
+      register: _manifest_content
+
+    - name: POST manifest to AAP
+      ansible.builtin.uri:
+        url: "{{ aap_url }}/api/controller/v2/config/"
+        method: POST
+        body_format: json
+        body:
+          eula_accepted: true
+          manifest: "{{ _manifest_content.content }}"
+        user: admin
+        password: "{{ aap_admin_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        status_code: [200, 204]
+      register: _manifest_upload
+
+    - name: Report manifest uploaded
+      ansible.builtin.debug:
+        msg: "AAP subscription manifest uploaded successfully"
 
 # ── Dev Spaces ───────────────────────────────────────────────────
 - name: Create openshift-devspaces namespace
@@ -210,5 +264,5 @@
   ansible.builtin.debug:
     msg: >-
       Cluster setup complete —
-      AAP Controller at {{ aap_url }},
+      AAP Gateway at {{ aap_url }},
       Dev Spaces at {{ _che.resources[0].status.cheURL | default('pending') }}

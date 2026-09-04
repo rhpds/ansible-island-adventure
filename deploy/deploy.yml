@@ -6,6 +6,8 @@
 
   vars_files:
     - vars/main.yml
+    - vars/flags.yml
+    - vars/challenges.yml
 
   pre_tasks:
     - name: Load CNV resource claim
@@ -87,9 +89,17 @@
         label: "{{ instructor.name }}"
 
     # ── Phase 2: Post-deploy configuration ───────────────────────
-    # TODO: configure_gitea — create student users/repos via Gitea API
-    # TODO: configure_ctfd — upload CTFd archive per instructor
-    # TODO: configure_aap — seed inventory/creds/users via AAP API
+    - name: "Phase 2: Configure Gitea users and repos"
+      ansible.builtin.include_role:
+        name: configure_gitea
+
+    - name: "Phase 2: Build and upload CTFd archives"
+      ansible.builtin.include_role:
+        name: configure_ctfd
+
+    - name: "Phase 2: Configure AAP inventories and credentials"
+      ansible.builtin.include_role:
+        name: configure_aap
 
     - name: Deployment summary
       ansible.builtin.debug:

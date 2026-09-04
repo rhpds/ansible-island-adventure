@@ -2,3 +2,9 @@
 www/
 .cache/
 *.env
+
+# Ansible vault password
+deploy/.vault-password
+
+# CTFd build artifacts
+deploy/*.zip

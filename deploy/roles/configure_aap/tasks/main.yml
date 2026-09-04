@@ -1,0 +1,11 @@
+---
+# Seed AAP with per-instructor inventory and machine credentials.
+# Each instructor's org gets an inventory pointing to their students' managed nodes
+# and a machine credential for SSH access.
+
+- name: Configure AAP resources for each instructor
+  ansible.builtin.include_tasks: per_instructor.yml
+  loop: "{{ instructors }}"
+  loop_control:
+    loop_var: _inst
+    label: "{{ _inst.name }}"

@@ -1,0 +1,37 @@
+count: {{ _ctfd_student_count + 1 }}
+results:
+  - id: 1
+    oauth_id: null
+    name: "{{ ctfd_admin_username }}"
+    password: "{{ _ctfd_admin_hash }}"
+    email: "{{ ctfd_admin_email }}"
+    type: admin
+    secret: null
+    website: null
+    affiliation: null
+    country: null
+    bracket: null
+    hidden: 1
+    banned: 0
+    verified: 0
+    team_id: null
+    language: null
+{% for student_name in _ctfd_student_list %}
+  - id: {{ loop.index + 1 }}
+    oauth_id: null
+    name: "{{ student_name }}"
+    password: "{{ _ctfd_student_hashes[student_name] }}"
+    email: "{{ student_name }}@island.local"
+    type: user
+    secret: null
+    website: null
+    affiliation: null
+    country: null
+    bracket: null
+    hidden: 0
+    banned: 0
+    verified: 0
+    team_id: null
+    language: null
+{% endfor %}
+meta: {}

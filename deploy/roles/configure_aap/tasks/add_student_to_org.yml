@@ -1,0 +1,25 @@
+---
+- name: "{{ _inst.name }} — Look up {{ _student }} user ID"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/gateway/v1/users/?username={{ _student }}"
+    method: GET
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: _student_user
+
+- name: "{{ _inst.name }} — Add {{ _student }} as org member"
+  ansible.builtin.uri:
+    url: "{{ aap_url }}/api/gateway/v1/role_user_assignments/"
+    method: POST
+    body_format: json
+    body:
+      user: "{{ _student_user.json.results[0].id }}"
+      role_definition: 5
+      object_id: "{{ _org_id }}"
+    user: admin
+    password: "{{ aap_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 400, 409]
