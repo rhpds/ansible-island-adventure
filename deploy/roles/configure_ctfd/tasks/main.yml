@@ -14,9 +14,20 @@
   loop_control:
     index_var: idx
 
-- name: Hash CTFd admin password
+- name: Hash CTFd admin password (bcrypt_sha256 for CTFd)
+  ansible.builtin.shell:
+    cmd: |
+      python3 -c "
+      import sys
+      from passlib.hash import bcrypt_sha256
+      print(bcrypt_sha256.hash(sys.stdin.read().strip()))
+      " <<< "{{ ctfd_admin_password }}"
+  register: _admin_hash_cmd
+  changed_when: false
+
+- name: Set admin hash fact
   ansible.builtin.set_fact:
-    _ctfd_admin_hash: "{{ ctfd_admin_password | password_hash('bcrypt') }}"
+    _ctfd_admin_hash: "{{ _admin_hash_cmd.stdout | trim }}"
 
 # ── Per-instructor archive build + upload ────────────────────────
 - name: Configure CTFd for each instructor

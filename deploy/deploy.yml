@@ -101,24 +101,71 @@
       ansible.builtin.include_role:
         name: configure_aap
 
-    - name: Deployment summary
+    # ── Phase 3: Instructor handouts (set_stats for lab env) ────────
+    - name: Build per-instructor handout data
+      ansible.builtin.set_fact:
+        _handouts: >-
+          {{ _handouts | default({}) | combine({
+            item.name: {
+              'instructor': {
+                'username': item.name,
+                'password': item.password
+              },
+              'urls': {
+                'ctfd': 'https://island-' ~ item.ctfd_ns ~ '.' ~ cluster_apps_domain,
+                'gitea': 'https://gitea-' ~ gitea_namespace ~ '.' ~ cluster_apps_domain,
+                'aap': aap_url,
+                'devspaces': 'https://devspaces.' ~ cluster_apps_domain,
+                'verifier': 'https://verifier-' ~ item.ctfd_ns ~ '.' ~ cluster_apps_domain,
+                'ocp_console': cnv_claim.status.summary.provision_data.openshift_console_url
+              },
+              'aap_org': item.name,
+              'students': _all_student_creds[item.name].students
+            }
+          }) }}
+      loop: "{{ instructors }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Publish handout data via set_stats
+      ansible.builtin.set_stats:
+        data:
+          island_adventure: "{{ _handouts }}"
+        per_host: false
+
+    - name: Display per-instructor handouts
       ansible.builtin.debug:
         msg: |
-          ══════════════════════════════════════════════════
-           Ansible Island Adventure — Deployment Complete
-          ══════════════════════════════════════════════════
+          ══════════════════════════════════════════════════════════
+           🏴‍☠️  {{ inst.name | upper }} — Ansible Island Adventure
+          ══════════════════════════════════════════════════════════
 
-          Shared Services:
-            Gitea:      https://gitea-{{ gitea_namespace }}.{{ cluster_apps_domain }}
-            AAP:        {{ aap_url }}
+          OpenShift Console: {{ _handouts[inst.name].urls.ocp_console }}
+            Username: {{ inst.name }}
+            Password: {{ inst.password }}
 
-          Per-Instructor URLs:
-          {% for inst in instructors %}
-            {{ inst.name }}:
-              CTFd:     https://island-{{ inst.ctfd_ns }}.{{ cluster_apps_domain }}
-              Verifier: https://verifier-{{ inst.ctfd_ns }}.{{ cluster_apps_domain }}
-              AAP Org:  {{ inst.name }}
+          CTFd (Challenges): {{ _handouts[inst.name].urls.ctfd }}
+          Gitea (Git repos):  {{ _handouts[inst.name].urls.gitea }}
+          AAP (Automation):   {{ _handouts[inst.name].urls.aap }}
+            Organization: {{ inst.name }}
+          Dev Spaces (IDE):   {{ _handouts[inst.name].urls.devspaces }}
+          Verifier:           {{ _handouts[inst.name].urls.verifier }}
+
+          Students:
+          {% for student, password in _handouts[inst.name].students.items() | sort %}
+            {{ student }}:
+              CTFd/Gitea password: {{ password }}
+              Managed node: {{ student }}-node.{{ inst.lab_ns }}.svc.cluster.local
           {% endfor %}
 
-          Console:      {{ cnv_claim.status.summary.provision_data.openshift_console_url }}
-          ══════════════════════════════════════════════════
+          ══════════════════════════════════════════════════════════
+      loop: "{{ instructors }}"
+      loop_control:
+        loop_var: inst
+        label: "{{ inst.name }}"
+
+    - name: Deployment complete
+      ansible.builtin.debug:
+        msg: >-
+          Ansible Island Adventure deployed for {{ instructors | length }} instructors.
+          Handout data published via set_stats (key: island_adventure).

@@ -7,13 +7,28 @@
     _ctfd_student_count: "{{ _inst.students | length }}"
     _ctfd_base_url: "https://island-{{ _inst.ctfd_ns }}.{{ cluster_apps_domain }}"
 
-- name: "{{ _inst.name }} — Hash student passwords for CTFd"
+- name: "{{ _inst.name }} — Hash student passwords for CTFd (bcrypt_sha256)"
+  ansible.builtin.shell:
+    cmd: |
+      python3 -c "
+      import sys
+      from passlib.hash import bcrypt_sha256
+      print(bcrypt_sha256.hash(sys.stdin.read().strip()))
+      " <<< "{{ _all_student_creds[_inst.name].students[item] }}"
+  register: _hash_results
+  loop: "{{ _inst.students }}"
+  changed_when: false
+  no_log: true
+
+- name: "{{ _inst.name }} — Build student hash dict"
   ansible.builtin.set_fact:
     _ctfd_student_hashes: >-
       {{ _ctfd_student_hashes | default({}) | combine({
-        item: _all_student_creds[_inst.name].students[item] | password_hash('bcrypt')
+        item.item: item.stdout | trim
       }) }}
-  loop: "{{ _inst.students }}"
+  loop: "{{ _hash_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
   no_log: true
 
 # ── Build archive directory ──────────────────────────────────────
@@ -154,7 +169,7 @@
 
 - name: "{{ _inst.name }} — Wait for import to settle"
   ansible.builtin.pause:
-    seconds: 10
+    seconds: 25
 
 - name: "{{ _inst.name }} — Verify challenges in database"
   ansible.builtin.command:

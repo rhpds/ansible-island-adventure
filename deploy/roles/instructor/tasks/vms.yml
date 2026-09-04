@@ -2,10 +2,14 @@
 # Managed nodes are RHEL UBI containers with SSHD, not KubeVirt VMs.
 # Each student gets a pod accessible via SSH from verifier and AAP.
 
+- name: "{{ instructor.name }} — Reset student passwords for this instructor"
+  ansible.builtin.set_fact:
+    _student_passwords: {}
+
 - name: "{{ instructor.name }} — Generate student passwords"
   ansible.builtin.set_fact:
     _student_passwords: >-
-      {{ _student_passwords | default({}) | combine({
+      {{ _student_passwords | combine({
         item: lookup('password', '/dev/null length=12 chars=ascii_letters,digits')
       }) }}
   loop: "{{ instructor.students }}"
