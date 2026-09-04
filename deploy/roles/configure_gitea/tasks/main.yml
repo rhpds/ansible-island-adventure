@@ -1,0 +1,107 @@
+---
+# Create student Gitea users and fork repos for each instructor's students.
+# Runs after shared_gitea has deployed and admin user is created.
+
+- name: Set Gitea API base URL
+  ansible.builtin.set_fact:
+    _gitea_api: "https://gitea-{{ gitea_namespace }}.{{ cluster_apps_domain }}/api/v1"
+
+# ── Ensure starter repos exist ───────────────────────────────────
+- name: Create starter user
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/admin/users"
+    method: POST
+    body_format: json
+    body:
+      username: starter
+      password: "{{ gitea_admin_password }}"
+      email: starter@island.local
+      must_change_password: false
+      login_name: starter
+      source_id: 0
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 422]
+
+- name: Migrate student repos into starter account
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/repos/migrate"
+    method: POST
+    body_format: json
+    body:
+      clone_addr: "{{ item.url }}"
+      repo_name: "{{ item.name }}"
+      repo_owner: starter
+      mirror: false
+      private: false
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 409]
+  loop: "{{ student_repos }}"
+
+# ── Per-instructor student users and repos ───────────────────────
+- name: Create or update student Gitea users
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/admin/users"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ item.1 }}"
+      password: "{{ _all_student_creds[item.0.name].students[item.1] }}"
+      email: "{{ item.1 }}@island.local"
+      must_change_password: false
+      login_name: "{{ item.1 }}"
+      source_id: 0
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 422]
+  loop: "{{ instructors | subelements('students') }}"
+  loop_control:
+    label: "{{ item.1 }}"
+
+- name: Update student passwords to match current credentials
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/admin/users/{{ item.1 }}"
+    method: PATCH
+    body_format: json
+    body:
+      password: "{{ _all_student_creds[item.0.name].students[item.1] }}"
+      login_name: "{{ item.1 }}"
+      source_id: 0
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+  loop: "{{ instructors | subelements('students') }}"
+  loop_control:
+    label: "{{ item.1 }}"
+
+- name: Fork repos into each student's account (via admin with sudo)
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/repos/starter/{{ student_repos[0].name }}/forks"
+    method: POST
+    body_format: json
+    body: {}
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    headers:
+      Sudo: "{{ item.1 }}"
+    status_code: [202, 409]
+  loop: "{{ instructors | subelements('students') }}"
+  loop_control:
+    label: "{{ item.1 }}"
+
+- name: Report Gitea configuration complete
+  ansible.builtin.debug:
+    msg: >-
+      Gitea configured: {{ instructors | map(attribute='students') | flatten | length }} student users created
+      with {{ student_repos | length }} repo(s) each

@@ -63,8 +63,9 @@ vm_disk_size: 20Gi
 vm_ssh_user: student
 
 # ── AAP Configuration ──────────────────────────────────────────
-aap_channel: "stable-2.5"
+aap_channel: "stable-2.7"
 aap_source: "redhat-operators"
+aap_manifest_path: "/home/matt/manifests/manifest.zip"
 
 # ── Dev Spaces Configuration ───────────────────────────────────
 devspaces_channel: "stable"
