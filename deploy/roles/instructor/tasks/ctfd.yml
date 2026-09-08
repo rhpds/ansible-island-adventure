@@ -289,7 +289,7 @@
                   - name: VERIFIER_HMAC_SECRET
                     value: "{{ _verifier_hmac }}"
                   - name: VERIFIER_HOST_PATTERN
-                    value: "{player}-vm.{{ instructor.lab_ns }}.svc.cluster.local"
+                    value: "{{ instructor.name }}-node.{{ instructor.lab_ns }}.svc.cluster.local"
                   - name: VERIFIER_SSH_USER_PATTERN
                     value: "{{ vm_ssh_user }}"
                   - name: VERIFIER_SSH_PORT

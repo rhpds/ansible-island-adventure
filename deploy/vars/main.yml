@@ -1,7 +1,5 @@
 ---
-# ── Instructor / Student Configuration ──────────────────────────
-students_per_instructor: 2
-
+# ── Instructor Configuration ────────────────────────────────────
 # Which cluster users are instructors (subset of users from .cnv.env)
 # Set to empty list to use ALL provisioned users
 instructor_users: []
@@ -11,7 +9,6 @@ gitea_namespace: gitea
 
 # Per-instructor namespace suffixes (prefixed with userN-)
 ctfd_ns_suffix: ctfd
-aap_ns_suffix: aap
 lab_ns_suffix: lab
 
 # ── CTFd Configuration ──────────────────────────────────────────
@@ -46,8 +43,8 @@ gitea_postgres_image: "postgres:14-alpine"
 gitea_volume_size: 4Gi
 gitea_postgres_volume_size: 4Gi
 
-# Repos cloned into each student's Gitea account
-student_repos:
+# Repos forked into each instructor's Gitea account
+instructor_repos:
   - url: https://github.com/l3acon/ansible-challenge.git
     name: ansible-challenge
 
@@ -55,11 +52,7 @@ student_repos:
 verifier_image: "quay.io/l3acon/ctf-verifier:latest"
 verifier_hmac_secret: ""  # auto-generated per instructor if empty
 
-# ── VM Configuration ────────────────────────────────────────────
-vm_image_source: "rhel9"
-vm_cpu: 1
-vm_memory: 2Gi
-vm_disk_size: 20Gi
+# ── Managed Node Configuration ──────────────────────────────────
 vm_ssh_user: student
 
 # ── AAP Configuration ──────────────────────────────────────────

@@ -44,20 +44,15 @@
           {{ instructor_users if (instructor_users | length > 0)
              else (cluster_users | dict2items | map(attribute='key') | sort | list) }}
 
-    - name: Build instructor list with student definitions
+    - name: Build instructor list
       ansible.builtin.set_fact:
         instructors: >-
           {{ instructors | default([]) + [{
             'name': item,
             'password': cluster_users[item].password,
             'ctfd_ns': item ~ '-' ~ ctfd_ns_suffix,
-            'lab_ns': item ~ '-' ~ lab_ns_suffix,
-            'students': _students
+            'lab_ns': item ~ '-' ~ lab_ns_suffix
           }] }}
-      vars:
-        _students: >-
-          {{ range(1, students_per_instructor + 1) | map('regex_replace', '^(.*)$',
-             item ~ '-student\1') | list }}
       loop: "{{ _active_instructor_users }}"
 
     - name: Display deployment plan
@@ -65,7 +60,6 @@
         msg: >-
           Deploying for {{ instructors | length }} instructors
           ({{ instructors | map(attribute='name') | join(', ') }})
-          with {{ students_per_instructor }} students each
           on {{ cluster_api_url }}
           (apps: {{ cluster_apps_domain }})
 
@@ -101,11 +95,7 @@
       ansible.builtin.include_role:
         name: configure_aap
 
-    - name: "Phase 2: Create student Keycloak users for Dev Spaces"
-      ansible.builtin.include_role:
-        name: configure_keycloak
-
-    # ── Phase 3: Instructor handouts (set_stats for lab env) ────────
+    # ── Phase 3: Instructor handouts ─────────────────────────────
     - name: Build per-instructor handout data
       ansible.builtin.set_fact:
         _handouts: >-
@@ -124,7 +114,7 @@
                 'ocp_console': cnv_claim.status.summary.provision_data.openshift_console_url
               },
               'aap_org': item.name,
-              'students': _all_student_creds[item.name].students
+              'managed_node': item.name ~ '-node.' ~ item.lab_ns ~ '.svc.cluster.local'
             }
           }) }}
       loop: "{{ instructors }}"
@@ -145,22 +135,15 @@
           ══════════════════════════════════════════════════════════
 
           OpenShift Console: {{ _handouts[inst.name].urls.ocp_console }}
-            Username: {{ inst.name }}
-            Password: {{ inst.password }}
-
           CTFd (Challenges): {{ _handouts[inst.name].urls.ctfd }}
           Gitea (Git repos):  {{ _handouts[inst.name].urls.gitea }}
           AAP (Automation):   {{ _handouts[inst.name].urls.aap }}
             Organization: {{ inst.name }}
           Dev Spaces (IDE):   {{ _handouts[inst.name].urls.devspaces }}
           Verifier:           {{ _handouts[inst.name].urls.verifier }}
+          Managed Node:       {{ _handouts[inst.name].managed_node }}
 
-          Students:
-          {% for student, password in _handouts[inst.name].students.items() | sort %}
-            {{ student }}:
-              CTFd/Gitea password: {{ password }}
-              Managed node: {{ student }}-node.{{ inst.lab_ns }}.svc.cluster.local
-          {% endfor %}
+          Login (all services): {{ inst.name }} / {{ inst.password }}
 
           ══════════════════════════════════════════════════════════
       loop: "{{ instructors }}"
