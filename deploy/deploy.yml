@@ -82,7 +82,7 @@
         loop_var: instructor
         label: "{{ instructor.name }}"
 
-    # ── Phase 2: Post-deploy configuration ───────────────────────
+    # ── Phase 2: Post-deploy configuration (services) ──────────────
     - name: "Phase 2: Configure Gitea users and repos"
       ansible.builtin.include_role:
         name: configure_gitea
@@ -91,7 +91,16 @@
       ansible.builtin.include_role:
         name: configure_ctfd
 
-    - name: "Phase 2: Configure AAP inventories and credentials"
+    # ── Phase 3: VMs (CNV operator should be ready by now) ───────
+    - name: "Phase 3: Provision instructor VMs"
+      ansible.builtin.include_tasks: roles/instructor/tasks/vms.yml
+      loop: "{{ instructors }}"
+      loop_control:
+        loop_var: instructor
+        label: "{{ instructor.name }}"
+
+    # ── Phase 4: AAP configuration (needs VMs to be submitted) ───
+    - name: "Phase 4: Configure AAP inventories and credentials"
       ansible.builtin.include_role:
         name: configure_aap
 

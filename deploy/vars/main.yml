@@ -52,8 +52,9 @@ instructor_repos:
 verifier_image: "quay.io/l3acon/ctf-verifier:latest"
 verifier_hmac_secret: ""  # auto-generated per instructor if empty
 
-# ── Managed Node Configuration ──────────────────────────────────
-vm_ssh_user: student
+# ── Managed Node (VM) Configuration ─────────────────────────────
+vm_image_source: rhel9    # DataSource name from openshift-virtualization-os-images
+vm_ssh_user: student      # cloud-init user created on the VM
 
 # ── AAP Configuration ──────────────────────────────────────────
 aap_channel: "stable-2.7"
