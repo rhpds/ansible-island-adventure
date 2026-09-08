@@ -1,10 +1,9 @@
 ---
-# Seed AAP with per-student inventory, credentials, and role assignments.
-# Each student has their own org with their own managed node.
+# Seed AAP with per-instructor inventory and machine credentials.
 
-- name: Configure AAP resources for each instructor's students
-  ansible.builtin.include_tasks: per_student.yml
-  loop: "{{ instructors | subelements('students') }}"
+- name: Configure AAP resources for each instructor
+  ansible.builtin.include_tasks: per_instructor.yml
+  loop: "{{ instructors }}"
   loop_control:
-    loop_var: _ctx
-    label: "{{ _ctx.1 }}"
+    loop_var: _inst
+    label: "{{ _inst.name }}"

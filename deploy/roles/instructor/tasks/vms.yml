@@ -1,41 +1,27 @@
 ---
-# Managed nodes are RHEL UBI containers with SSHD, not KubeVirt VMs.
-# Each student gets a pod accessible via SSH from verifier and AAP.
+# Deploy one managed node pod per instructor.
 
-- name: "{{ instructor.name }} — Reset student passwords for this instructor"
-  ansible.builtin.set_fact:
-    _student_passwords: {}
-
-- name: "{{ instructor.name }} — Generate student passwords"
-  ansible.builtin.set_fact:
-    _student_passwords: >-
-      {{ _student_passwords | combine({
-        item: lookup('password', '/dev/null length=12 chars=ascii_letters,digits')
-      }) }}
-  loop: "{{ instructor.students }}"
-
-- name: "{{ instructor.name }} — Deploy managed node pod for each student"
+- name: "{{ instructor.name }} — Deploy managed node pod"
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: apps/v1
       kind: Deployment
       metadata:
-        name: "{{ item }}-node"
+        name: "{{ instructor.name }}-node"
         namespace: "{{ instructor.lab_ns }}"
         labels:
-          app: "{{ item }}-node"
+          app: "{{ instructor.name }}-node"
           island-adventure/instructor: "{{ instructor.name }}"
-          island-adventure/student: "{{ item }}"
       spec:
         replicas: 1
         selector:
           matchLabels:
-            app: "{{ item }}-node"
+            app: "{{ instructor.name }}-node"
         template:
           metadata:
             labels:
-              app: "{{ item }}-node"
+              app: "{{ instructor.name }}-node"
           spec:
             containers:
               - name: node
@@ -47,7 +33,7 @@
                     dnf install -y openssh-server python3 procps-ng sudo && \
                     ssh-keygen -A && \
                     useradd -m {{ vm_ssh_user }} && \
-                    echo '{{ vm_ssh_user }}:{{ _student_passwords[item] }}' | chpasswd && \
+                    echo '{{ vm_ssh_user }}:{{ instructor.password }}' | chpasswd && \
                     echo '{{ vm_ssh_user }} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/{{ vm_ssh_user }} && \
                     mkdir -p /run/sshd && \
                     /usr/sbin/sshd -D -e
@@ -63,32 +49,20 @@
                   limits:
                     cpu: 500m
                     memory: 512Mi
-  loop: "{{ instructor.students }}"
 
-- name: "{{ instructor.name }} — Create Service for each student node"
+- name: "{{ instructor.name }} — Create managed node Service"
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: v1
       kind: Service
       metadata:
-        name: "{{ item }}-node"
+        name: "{{ instructor.name }}-node"
         namespace: "{{ instructor.lab_ns }}"
       spec:
         selector:
-          app: "{{ item }}-node"
+          app: "{{ instructor.name }}-node"
         ports:
           - name: ssh
             port: 22
             targetPort: 22
-  loop: "{{ instructor.students }}"
-
-- name: "{{ instructor.name }} — Store student credentials"
-  ansible.builtin.set_fact:
-    _all_student_creds: >-
-      {{ _all_student_creds | default({}) | combine({
-        instructor.name: {
-          'students': _student_passwords,
-          'instructor_password': instructor.password
-        }
-      }) }}

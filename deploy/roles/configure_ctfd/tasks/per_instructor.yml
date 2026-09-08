@@ -1,35 +1,25 @@
 ---
 # Build and upload CTFd archive for one instructor.
 
-- name: "{{ _inst.name }} — Set student facts for CTFd"
+- name: "{{ _inst.name }} — Set CTFd facts"
   ansible.builtin.set_fact:
-    _ctfd_student_list: "{{ _inst.students }}"
-    _ctfd_student_count: "{{ _inst.students | length }}"
     _ctfd_base_url: "https://island-{{ _inst.ctfd_ns }}.{{ cluster_apps_domain }}"
 
-- name: "{{ _inst.name }} — Hash student passwords for CTFd (bcrypt_sha256)"
+- name: "{{ _inst.name }} — Hash instructor password for CTFd (bcrypt_sha256)"
   ansible.builtin.shell:
     cmd: |
       python3 -c "
       import sys
       from passlib.hash import bcrypt_sha256
       print(bcrypt_sha256.hash(sys.stdin.read().strip()))
-      " <<< "{{ _all_student_creds[_inst.name].students[item] }}"
-  register: _hash_results
-  loop: "{{ _inst.students }}"
+      " <<< "{{ _inst.password }}"
+  register: _inst_hash_result
   changed_when: false
   no_log: true
 
-- name: "{{ _inst.name }} — Build student hash dict"
+- name: "{{ _inst.name }} — Set instructor hash"
   ansible.builtin.set_fact:
-    _ctfd_student_hashes: >-
-      {{ _ctfd_student_hashes | default({}) | combine({
-        item.item: item.stdout | trim
-      }) }}
-  loop: "{{ _hash_results.results }}"
-  loop_control:
-    label: "{{ item.item }}"
-  no_log: true
+    _ctfd_instructor_hash: "{{ _inst_hash_result.stdout | trim }}"
 
 # ── Build archive directory ──────────────────────────────────────
 - name: "{{ _inst.name }} — Create archive temp directory"
@@ -203,6 +193,6 @@
     path: "{{ _archive_dir.path }}"
     state: absent
 
-- name: "{{ _inst.name }} — Reset student hashes for next iteration"
+- name: "{{ _inst.name }} — Reset hashes for next iteration"
   ansible.builtin.set_fact:
-    _ctfd_student_hashes: {}
+    _ctfd_instructor_hash: ""

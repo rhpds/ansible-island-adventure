@@ -13,7 +13,7 @@
     - "{{ instructor.ctfd_ns }}"
     - "{{ instructor.lab_ns }}"
 
-- name: "{{ instructor.name }} — Grant anyuid SCC on lab namespace for managed nodes"
+- name: "{{ instructor.name }} — Grant anyuid SCC on lab namespace for managed node"
   ansible.builtin.command:
     argv:
       - oc

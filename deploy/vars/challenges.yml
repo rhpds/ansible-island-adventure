@@ -290,6 +290,7 @@ ctfd_challenges:
           Go to Automation Execution -> Infrastructure -> Credentials and create a new credential of type "Vault". Enter `AAP` as the vault password. Then create a new Job Template that uses both this vault credential and the `secret-word.yml` playbook.
         cost: 10
 
+  # ── Intermediate challenges: Requrie VM automation ──────────────────────────
   - name: You found a treasure chest
     description: >-
       Create a **Job Template** to deploy a web server using the `apache/apache_role_install.yml` playbook.
