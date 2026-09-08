@@ -1,4 +1,11 @@
 ---
+# Phase 0a: Submit ALL operator subscriptions immediately (parallel install)
+# Phase 0b: Wait for operators + deploy shared services
+
+# ══════════════════════════════════════════════════════════════════
+# Phase 0a: Fire off all operator subscriptions
+# ══════════════════════════════════════════════════════════════════
+
 # ── AAP Operator ─────────────────────────────────────────────────
 - name: Create AAP operator namespace
   kubernetes.core.k8s:
@@ -55,7 +62,54 @@
         source: "{{ devspaces_source }}"
         sourceNamespace: openshift-marketplace
 
-# ── Wait for Operators ───────────────────────────────────────────
+# ── OpenShift Virtualization Operator ────────────────────────────
+- name: Create openshift-cnv namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: openshift-cnv
+
+- name: Create CNV OperatorGroup
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: kubevirt-hyperconverged-group
+        namespace: openshift-cnv
+      spec:
+        targetNamespaces:
+          - openshift-cnv
+
+- name: Install OpenShift Virtualization Operator subscription
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: kubevirt-hyperconverged
+        namespace: openshift-cnv
+      spec:
+        channel: stable
+        installPlanApproval: Automatic
+        name: kubevirt-hyperconverged
+        source: redhat-operators
+        sourceNamespace: openshift-marketplace
+
+- name: Report operator subscriptions submitted
+  ansible.builtin.debug:
+    msg: "All operator subscriptions submitted (AAP, Dev Spaces, OpenShift Virtualization). Waiting for installs..."
+
+# ══════════════════════════════════════════════════════════════════
+# Phase 0b: Wait for operators and deploy shared services
+# ══════════════════════════════════════════════════════════════════
+
+# ── Wait for AAP ─────────────────────────────────────────────────
 - name: Wait for AAP Operator CSV to succeed
   kubernetes.core.k8s_info:
     api_version: operators.coreos.com/v1alpha1
@@ -68,19 +122,7 @@
   retries: "{{ k8s_retries }}"
   delay: "{{ k8s_retry_delay }}"
 
-- name: Wait for Dev Spaces Operator CSV to succeed
-  kubernetes.core.k8s_info:
-    api_version: operators.coreos.com/v1alpha1
-    kind: ClusterServiceVersion
-    namespace: openshift-operators
-  register: _devspaces_csv
-  until: >-
-    _devspaces_csv.resources | selectattr('metadata.name', 'match', '^devspacesoperator') | list | length > 0 and
-    (_devspaces_csv.resources | selectattr('metadata.name', 'match', '^devspacesoperator') | list)[0].status.phase | default('') == 'Succeeded'
-  retries: "{{ k8s_retries }}"
-  delay: "{{ k8s_retry_delay }}"
-
-# ── Shared AAP Platform Instance (Gateway + Controller + Hub) ────
+# ── Deploy shared AAP instance ───────────────────────────────────
 - name: Deploy AnsibleAutomationPlatform CR
   kubernetes.core.k8s:
     state: present
@@ -91,20 +133,15 @@
         name: aap
         namespace: aap
       spec:
-        # Gateway is the single entry point
         gateway:
           replicas: 1
-        # Automation Controller
         controller:
           replicas: 1
           disabled: false
-        # Automation Hub (disabled to save resources)
         hub:
           disabled: true
-        # EDA (disabled to save resources)
         eda:
           disabled: true
-        # Lightspeed (disabled)
         lightspeed:
           disabled: true
 
@@ -143,6 +180,10 @@
     namespace: aap
     label_selectors: []
   register: _aap_routes
+  until: >-
+    _aap_routes.resources | selectattr('metadata.name', 'match', '.*gateway.*|^aap.*') | list | length > 0
+  retries: 30
+  delay: 10
 
 - name: Set AAP connection facts
   ansible.builtin.set_fact:
@@ -208,13 +249,24 @@
         force_basic_auth: true
         validate_certs: false
         status_code: [200, 204]
-      register: _manifest_upload
 
     - name: Report manifest uploaded
       ansible.builtin.debug:
         msg: "AAP subscription manifest uploaded successfully"
 
-# ── Dev Spaces ───────────────────────────────────────────────────
+# ── Wait for Dev Spaces ──────────────────────────────────────────
+- name: Wait for Dev Spaces Operator CSV to succeed
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: openshift-operators
+  register: _devspaces_csv
+  until: >-
+    _devspaces_csv.resources | selectattr('metadata.name', 'match', '^devspacesoperator') | list | length > 0 and
+    (_devspaces_csv.resources | selectattr('metadata.name', 'match', '^devspacesoperator') | list)[0].status.phase | default('') == 'Succeeded'
+  retries: "{{ k8s_retries }}"
+  delay: "{{ k8s_retry_delay }}"
+
 - name: Create openshift-devspaces namespace
   kubernetes.core.k8s:
     state: present
@@ -265,4 +317,5 @@
     msg: >-
       Cluster setup complete —
       AAP Gateway at {{ aap_url }},
-      Dev Spaces at {{ _che.resources[0].status.cheURL | default('pending') }}
+      Dev Spaces at {{ _che.resources[0].status.cheURL | default('pending') }},
+      OpenShift Virtualization installing in background
