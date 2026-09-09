@@ -73,6 +73,23 @@
       aia_aap_admin_password: "{{ aia_aap_admin_password }}"
     per_host: false
 
+- name: Write deploy output to local file
+  ansible.builtin.copy:
+    content: "{{ _deploy_output | to_nice_json }}"
+    dest: "{{ playbook_dir }}/../deploy-output.json"
+    mode: "0600"
+  vars:
+    _deploy_output:
+      deployed_at: "{{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"
+      cluster_apps_domain: "{{ aia_cluster_apps_domain }}"
+      aap_url: "{{ aia_aap_url }}"
+      aap_admin_password: "{{ aia_aap_admin_password }}"
+      gitea_url: "https://gitea-{{ aia_gitea_namespace }}.{{ aia_cluster_apps_domain }}"
+      devspaces_url: "https://devspaces.{{ aia_cluster_apps_domain }}"
+      ocp_console: "https://console-openshift-console.{{ aia_cluster_apps_domain }}"
+      instructors: "{{ aia_instructors }}"
+      handouts: "{{ _handouts }}"
+
 - name: Display per-instructor handouts
   ansible.builtin.debug:
     msg: |
