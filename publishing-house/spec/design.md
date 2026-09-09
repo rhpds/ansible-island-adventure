@@ -71,6 +71,14 @@ Intermediate
 - Gitea repository setup with challenge source material
 - RHEL9 VMs provisioned via OpenShift Virtualization with cloud-init (SSH-accessible managed nodes for Ansible challenges)
 
+## Assessment Strategy
+
+- **Modules 1–2 (Welcome, Prerequisites):** Trust-based — presentation and discussion, no automated validation
+- **Module 3 (Explore the environment):** Instructor verifies access to all services (CTFd, Gitea, AAP, Dev Spaces, OCP console) by navigating to each URL
+- **Module 4 (Play the game):** CTFd scoring platform tracks challenge completion — instructors submit flags and the platform validates answers automatically
+- **Module 5 (Customize and extend):** Instructor modifies a challenge definition and re-runs the deployer; success is verified by seeing the updated challenge in their CTFd instance
+- **Module 6 (From event to pipeline):** Trust-based — discussion and planning exercise, no automated validation
+
 ## Infrastructure Requirements
 
 - **Cloud provider:** CNV (OpenShift Virtualization)
