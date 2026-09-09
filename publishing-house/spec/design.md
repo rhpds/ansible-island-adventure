@@ -61,25 +61,27 @@ Intermediate
 
 ## Environment
 
-**Learner view:** A Red Hat OpenShift cluster provisioned via RHDP with the full Ansible Island Adventure environment pre-deployed — CTFd, Gitea, AAP, Dev Spaces, managed nodes, and per-player credentials are all ready at lab start. Students receive the deployment artifacts (`deploy.yml`, roles, `rosa.creds`, `player.creds`, `keys/`) so they can understand how the environment was provisioned, re-run the idempotent deployer safely, and modify challenges.
+**Learner view:** A shared OpenShift CNV cluster provisioned via RHDP with all services pre-deployed. Each instructor gets their own CTFd instance, AAP organization, Gitea account, RHEL9 managed node VM, and Dev Spaces access — all using the same login credentials. The deployment artifacts (`deploy/deploy.yml`, roles, `.cnv.env`) are available so instructors can understand the architecture, re-run the idempotent deployer, and modify challenges.
 
 **Automation needed:** Yes (pre-deployed by platform)
 
-- Ansible playbook to deploy CTFd, Gitea, AAP, Dev Spaces, managed nodes on OpenShift (run by RHDP at provisioning time)
-- Automated per-player credential generation and PDF handout creation
-- CTFd challenge upload and configuration
+- Ansible playbook deploys all operators (AAP 2.7, Dev Spaces, OpenShift Virtualization), shared services (Gitea, AAP Gateway), and per-instructor resources (CTFd stack, RHEL9 VMs, AAP orgs) on a single CNV cluster
+- Per-instructor credential handouts published via `set_stats` for Showroom display
+- CTFd challenge archive build and import with vault-encrypted flags
 - Gitea repository setup with challenge source material
-- Deployment artifacts provided to students for exploration, customization, and reuse in their own environments
+- RHEL9 VMs provisioned via OpenShift Virtualization with cloud-init (SSH-accessible managed nodes for Ansible challenges)
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** AWS (ROSA open environment)
-- **Cluster type:** Multinode
-- **OCP version:** 4.20
-- **Topology:** Per-student (each student gets their own ROSA open environment with AIA pre-deployed)
-- **Sizing:** ROSA open environment defaults (control plane managed by ROSA)
-- **Automation approach:** Ansible (operators installed from redhat-operators; CTFd stack deployed via Ansible playbook with k8s module — run by platform at provisioning time)
+- **Cloud provider:** CNV (OpenShift Virtualization)
+- **Cluster type:** Multinode — 5 workers (64 vCPU, 128Gi RAM each)
+- **OCP version:** 4.21
+- **Topology:** Shared-cluster (all instructors share one cluster; per-instructor namespaces for isolation)
+- **Per-instructor VM:** 1 RHEL9 VM (1 vCPU, 2Gi guest, 30Gi disk) — Ansible managed node for CTF challenges, provisioned via OpenShift Virtualization
+- **Shared services:** AAP 2.7 (Gateway + Controller, per-instructor organizations), Gitea, Dev Spaces, CTFd (per-instructor instances)
+- **Capacity:** ~140 instructors per cluster with 25% headroom; see `deploy/CAPACITY.md` for sizing details
+- **Automation approach:** Ansible (operators installed from redhat-operators; all services deployed via Ansible playbook with kubernetes.core — run by platform at provisioning time)
 - **AI/MaaS:** None
-- **External services:** registry.redhat.io (Red Hat operator images), github.com (rhpds/gitea-operator), docker.io (CTFd, MariaDB, Redis images)
-- **AAP version:** 2.7 (stable-2.7 channel)
+- **External services:** registry.redhat.io (operator images), registry.access.redhat.com (RHEL VM images), github.com (ansible-challenge repo), docker.io (CTFd, MariaDB, Redis), quay.io (verifier image)
+- **AAP version:** 2.7 (stable-2.7 channel, AnsibleAutomationPlatform CR with Gateway)
 - **Non-GA products:** None (all products are GA)
