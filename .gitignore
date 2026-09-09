@@ -1,10 +1,13 @@
 # Antora build output
 www/
 .cache/
+
+# Environment files (contain credentials)
 *.env
+.leaderboard.env
 
 # Ansible vault password
-deploy/.vault-password
+.vault-password
 
 # CTFd build artifacts
-deploy/*.zip
+*.zip
