@@ -55,7 +55,7 @@ spec:
     platform: ocp
     topology: shared-cluster
     cloud_provider: cnv
-    max_concurrent_users: null
+    max_concurrent_users: 100
     ocp_version: '4.21'
     cluster_type: multinode
     control_plane_instance_count: null
@@ -64,7 +64,7 @@ spec:
     worker_count: 5
     worker_cpu: 64
     worker_ram_gb: 128
-    worker_disk_gb: null
+    worker_disk_gb: 100
     vms_per_student:
     - name: managed-node
       os: rhel9
