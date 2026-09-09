@@ -11,3 +11,6 @@ www/
 
 # CTFd build artifacts
 *.zip
+
+# Deploy output
+deploy-output.json

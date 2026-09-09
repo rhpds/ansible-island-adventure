@@ -184,6 +184,37 @@
   delay: 5
   until: (_challenge_count.stdout_lines | default(['0']) | last | trim | int) > 0
 
+- name: "{{ _inst.name }} — Sync instructor password in CTFd"
+  ansible.builtin.command:
+    argv:
+      - oc
+      - exec
+      - deploy/ctfd
+      - -n
+      - "{{ _inst.ctfd_ns }}"
+      - --
+      - python3
+      - -c
+      - |
+        import sys
+        from CTFd import create_app
+        app = create_app()
+        with app.app_context():
+            from CTFd.models import db
+            from CTFd.utils.crypto import hash_password
+            hashed = hash_password(sys.argv[2])
+            db.session.execute(
+                db.text("UPDATE users SET password = :pw WHERE name = :name"),
+                {"pw": hashed, "name": sys.argv[1]}
+            )
+            db.session.commit()
+            print("updated")
+      - "{{ _inst.name }}"
+      - "{{ _inst.password }}"
+  register: _pw_sync
+  changed_when: "'updated' in (_pw_sync.stdout_lines | default([]) | last | default(''))"
+  no_log: true
+
 - name: "{{ _inst.name }} — Report CTFd configured"
   ansible.builtin.debug:
     msg: "CTFd for {{ _inst.name }}: {{ _challenge_count.stdout_lines | last | trim }} challenges loaded at {{ _ctfd_base_url }}"
