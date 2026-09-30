@@ -30,27 +30,27 @@ spec:
   - id: module-01
     title: Welcome to the island
     duration_min: 15
-    status: draft
+    status: complete
   - id: module-02
     title: Prerequisites and logistics
     duration_min: 10
-    status: draft
+    status: complete
   - id: module-03
     title: Explore the environment
     duration_min: 15
-    status: draft
+    status: complete
   - id: module-04
     title: Play the game
     duration_min: 45
-    status: draft
+    status: complete
   - id: module-05
     title: Customize and extend
     duration_min: 20
-    status: draft
+    status: complete
   - id: module-06
     title: From event to pipeline
     duration_min: 15
-    status: draft
+    status: complete
   environment:
     platform: ocp
     topology: shared-cluster
@@ -92,11 +92,11 @@ spec:
 development:
   automation:
     ansible:
-      status: draft
+      status: complete
   e2e:
-    status: draft
+    status: complete
   healthCheck:
-    status: draft
+    status: complete
 compliance:
   last_hard_check: null
   hard_result: null

@@ -152,9 +152,4 @@ Take this time to ask questions about:
 * Challenge completion patterns, hint usage, and time on platform provide actionable insight for targeted outreach.
 * All resources — deployment automation, event assets, facilitation guides — are available for independent delivery via the RHDP catalog.
 
-== Congratulations!
-
-You have completed the Ansible Island Adventure Facilitator Training.
-You are now equipped to independently order, deliver, customize, and generate pipeline from Ansible Island Adventure events.
-
-🏴‍☠️ *Fair winds and following seas, Captain!*
+Continue to the xref:conclusion.adoc[Conclusion] for a summary of what you've accomplished and next steps.
