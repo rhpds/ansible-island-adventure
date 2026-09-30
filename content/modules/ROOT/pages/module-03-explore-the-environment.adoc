@@ -75,71 +75,79 @@ The environment was deployed using an Ansible playbook. Understanding these arti
 
 === Playbook Structure
 
-The deployment playbook (`ansible-testing/deploy.yml`) follows this execution order:
+The deployment playbook (`ansible-testing/deploy.yml`) uses a role-based structure to provision the full environment. The roles map to the logical deployment stages:
 
 [source,text]
 ----
 pre_tasks:
-  ├── Load CNV resource claim (.cnv.env)
+  ├── Load resource claim (rosa.creds / .cnv.env)
   ├── Extract cluster credentials
   ├── Login to OpenShift as cluster-admin
-  └── Build instructor list
+  └── Build instructor list from player.creds
 
-tasks:
-  ├── Phase 0: Cluster-wide setup (cluster_setup)
-  ├── Phase 0: Deploy shared Gitea (shared_gitea)
-  ├── Phase 1: Per-instructor infrastructure (instructor)
-  ├── Phase 2: Configure Gitea users and repos (configure_gitea)
-  ├── Phase 2: Build and upload CTFd archives (configure_ctfd)
-  ├── Phase 3: Provision instructor VMs (vms.yml)
-  ├── Phase 4: Configure AAP inventories and credentials (configure_aap)
-  └── Phase 5: Build and publish handout data (set_stats)
+tasks (roles in execution order):
+  ├── cluster_scale    → Scale worker nodes and install operators
+  ├── players          → Create per-instructor namespaces and accounts
+  ├── managed_nodes    → Provision RHEL 9 VMs via OpenShift Virtualization
+  ├── devspaces        → Deploy Red Hat OpenShift Dev Spaces
+  ├── ctfd             → Deploy per-instructor CTFd instances
+  ├── gitea            → Deploy shared Gitea and fork repos per instructor
+  ├── aap              → Configure AAP organizations, inventories, credentials
+  └── verifier         → Deploy per-instructor challenge verifier sidecars
 ----
+
+In the current implementation, these logical stages are organized into Ansible roles such as `cluster_setup`, `shared_gitea`, `instructor`, `configure_gitea`, `configure_ctfd`, and `configure_aap`. The role names may evolve, but the deployment stages remain the same.
 
 === Key Roles
 
 [cols="1,3",options="header"]
 |===
-| Role | What It Does
+| Logical Stage | What It Does
 
-| `cluster_setup`
-| Installs cluster-wide operators (AAP 2.7, Dev Spaces, OpenShift Virtualization)
+| `cluster_scale`
+| Scales worker nodes and installs cluster-wide operators (AAP 2.7, Dev Spaces, OpenShift Virtualization)
 
-| `shared_gitea`
-| Deploys a shared Gitea instance with PostgreSQL
+| `players`
+| Creates per-instructor namespaces, user accounts, and cached credentials (`player.creds`)
 
-| `instructor`
-| Creates per-instructor namespaces, CTFd stacks, and lab resources
+| `managed_nodes`
+| Provisions RHEL 9 virtual machines via OpenShift Virtualization with cloud-init and SSH access via `keys/`
 
-| `configure_gitea`
-| Creates Gitea user accounts and forks the `ansible-challenge` repository
+| `devspaces`
+| Deploys Red Hat OpenShift Dev Spaces for browser-based IDE access
 
-| `configure_ctfd`
-| Builds CTFd challenge archives with vault-encrypted flags and imports them
+| `ctfd`
+| Deploys per-instructor CTFd instances with MariaDB and Redis
 
-| `configure_aap`
-| Sets up per-instructor AAP organizations, inventories, and machine credentials
+| `gitea`
+| Deploys shared Gitea instance and forks the `ansible-challenge` repository per instructor
+
+| `aap`
+| Configures per-instructor AAP organizations, inventories, and machine credentials
+
+| `verifier`
+| Deploys per-instructor challenge verification sidecars that validate automation results on managed nodes
 |===
 
 === Stateful Files
 
-Three files bridge the platform provisioning and the deployment automation:
+Three key files coordinate deployment state and bridge the platform provisioning and the deployment automation:
 
 [cols="1,3",options="header"]
 |===
 | File | Purpose
 
-| `.cnv.env`
-| ResourceClaim from RHDP — contains cluster API URL, credentials, apps domain, and user list
+| `rosa.creds` (or `.cnv.env`)
+| ResourceClaim from RHDP — contains cluster API URL, admin credentials, apps domain, and user list. The platform provides this file to students automatically when the environment is provisioned.
 
-| `vars/flags.yml`
-| Vault-encrypted challenge flag values — decrypted at deploy time using `.vault-password`
+| `player.creds`
+| Cached per-instructor credentials — passwords and verification tokens generated on the first run and reused on subsequent runs. This cache-or-generate pattern ensures credential stability across re-deployments.
 
-| `vars/challenges.yml`
-| Challenge definitions — categories, point values, descriptions, hints, and flag references
+| `keys/`
+| SSH keypair directory — contains the SSH keys used to access managed node VMs. Generated once and cached so that managed nodes remain accessible across re-runs.
 |===
 
-The deployer reads `.cnv.env` to discover the cluster and build the instructor list. Flags are encrypted so they cannot be read from the repository.
+The deployer loads `rosa.creds` (or `.cnv.env`) to discover the cluster and build the instructor list. On the first run, it generates `player.creds` and `keys/`; on subsequent runs, it loads the cached versions to avoid regenerating passwords or SSH keys. Flags are vault-encrypted in `vars/flags.yml` so they cannot be read from the repository.
 
 == RHDP Ordering and Provisioning Flow
 
