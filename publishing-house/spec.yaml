@@ -11,7 +11,7 @@ project:
     enable other Red Hatters to run CTF competitions around the product (Ansible Automation
     Platform). '
   jira_ticket: RHDPCD-1137
-  workflow_id: 36b78964-d053-4dc4-87d9-4502d75cfc64
+  workflow_id: c4935515-c6cf-4c89-aced-2ec235b16c5a
 spec:
   title: Ansible Island Adventure
   learning_objectives:
