@@ -1,0 +1,174 @@
+= Customize and Extend
+:navtitle: 5. Customize and Extend
+
+== Modify Challenge Content
+
+Challenge definitions live in YAML variable files.
+You can customize them for any customer or partner engagement without modifying the playbook or roles.
+
+=== Review the Challenge Structure
+
+. In your Dev Spaces workspace, navigate to the deployment repository.
+. Open `ansible-testing/vars/challenges.yml`.
+
+Each challenge is defined as a YAML dictionary with these fields:
+
+[source,yaml]
+----
+- name: "Challenge Name"
+  description: >-
+    Markdown-formatted description shown to participants.
+  value: 50                  # Points awarded
+  category: "At the Beach"  # Challenge category
+  state: visible             # visible or hidden
+  prerequisites:             # Challenges that must be completed first
+    - "Previous Challenge"
+  flags:
+    - content: "{{ ctfd_flags.flag_name }}"  # Reference to vault-encrypted flag
+      data: case_insensitive
+  hints:
+    - content: "Hint text shown to participants"
+      cost: 5                # Point cost to reveal the hint
+----
+
+=== Add or Modify a Challenge
+
+Let's modify an existing challenge to see how the process works.
+
+. Open `ansible-testing/vars/challenges.yml` in your Dev Spaces editor.
+. Find the "Ansible Docs" challenge in the *Warm Up* category.
+. Change the `value` from `10` to `15`:
++
+[source,yaml]
+----
+  - name: Ansible Docs
+    description: What is the URL to find documentation about Ansible?
+    value: 15  # Changed from 10
+    category: Warm Up
+    state: visible
+----
++
+. Optionally, add a new challenge to the Warm Up category:
++
+[source,yaml]
+----
+  - name: "Red Hat Learning"
+    description: >-
+      What is the URL for Red Hat's free interactive learning platform
+      where you can practice Ansible in a browser?
+    value: 10
+    category: Warm Up
+    state: visible
+    prerequisites:
+      - Ansible Docs
+    flags:
+      - content: "{{ ctfd_flags.red_hat_learning }}"
+        type: regex
+        data: case_insensitive
+    hints:
+      - content: >-
+          Search for "Red Hat interactive labs" or "Red Hat learning".
+        cost: 2
+----
+
+[NOTE]
+====
+For new challenges that reference new flags, you must also add the corresponding flag value to `vars/flags.yml` (vault-encrypted).
+Use `ansible-vault edit vars/flags.yml --vault-password-file .vault-password` to add new flag entries.
+====
+
+=== Review Advanced Challenges
+
+Open `ansible-testing/vars/challenges.yml` and scroll to the `ctfd_challenges_advanced` section at the bottom.
+These challenges use a *verifier service* — a sidecar container that SSH-es into the managed node to validate that the participant's playbook actually achieved the desired state.
+
+Advanced challenges follow the same YAML structure but require participants to call a verification API endpoint after completing the task:
+
+[source,bash,subs="attributes"]
+----
+curl -X POST https://{verifier_url}/validate \
+  -H 'Content-Type: application/json' \
+  -d '{"token": "YOUR_TOKEN", "challenge": "deploy-file"}'
+----
+
+== Re-Run the Idempotent Deployer
+
+The deployment playbook is *idempotent* — re-running it updates only what has changed.
+
+=== Apply CTFd Changes Only
+
+To apply your challenge modifications without touching other infrastructure, use tags:
+
+[source,bash]
+----
+cd ansible-testing
+ansible-playbook deploy.yml --tags ctfd \
+  --vault-password-file ../.vault-password
+----
+
+This scoped run:
+
+* Loads cached credentials from the environment (no regeneration)
+* Rebuilds and uploads only the CTFd challenge archives
+* Leaves all other services untouched
+
+=== Verify Your Changes
+
+. Open your CTFd instance: {ctfd_url}
+. Navigate to the challenges page.
+. Confirm that the modified challenge now shows the updated point value.
+. If you added a new challenge, confirm it appears in the correct category.
+
+=== Full Re-Deployment
+
+Running the full playbook without tags re-executes all roles:
+
+[source,bash]
+----
+ansible-playbook deploy.yml --vault-password-file ../.vault-password
+----
+
+The deployer *converges* to the desired state — only changes are applied. Existing infrastructure that already matches the desired state is left alone.
+
+== State Coordination and Artifact Handoff
+
+=== Deployer-Managed vs. Runtime State
+
+Understanding what the deployer manages vs. what accumulates at runtime is critical for re-deployment decisions.
+
+[cols="1,1,2",options="header"]
+|===
+| State Type | Examples | Re-deployment Impact
+
+| *Deployer-managed*
+| Challenge definitions, player accounts, CTFd configuration, Gitea repos
+| Updated to match current variable files
+
+| *Runtime*
+| Scores, flag submissions, leaderboard positions, player progress
+| *Unaffected* — lives in the CTFd database
+
+| *Cached credentials*
+| Player passwords, verification tokens (in environment state)
+| Reused on re-runs; not regenerated
+|===
+
+This means you can *safely re-deploy* during or after an event to fix challenge content without resetting participant progress.
+
+=== Fresh Environment Workflow
+
+For a new customer event:
+
+. *Order from RHDP* — Request a fresh "Ansible Island Adventure" environment.
+. *Receive pre-deployed environment* — The environment arrives with all services deployed and the default challenge set loaded.
+. *Customize* — Modify `vars/challenges.yml` and optionally `vars/flags.yml` to tailor challenges for the audience.
+. *Re-deploy* — Run `ansible-playbook deploy.yml --tags ctfd` to apply customizations.
+. *Generate handouts* — Distribute credential handouts to participants.
+. *Facilitate* — Run the event using the skills from this lab.
+
+== Key Takeaways
+
+* Challenge content is defined in YAML variables files and can be customized per engagement without modifying the playbook or roles.
+* The deployer is idempotent: re-running it converges to the desired state — only changes are applied.
+* Runtime state (scores, submissions) lives in the CTFd database and is independent of the deployer — re-deploying does not reset player progress.
+* For customer events: order from RHDP → receive pre-deployed environment → customize challenges → distribute credentials → facilitate.

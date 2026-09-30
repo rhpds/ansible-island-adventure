@@ -1,0 +1,11 @@
+---
+namespace: "rhpds"
+name: "aia"
+version: "1.0.0"
+readme: README.md
+authors:
+  - "Matt Fernandez <matferna@redhat.com>"
+description: "Ansible Island Adventure — deployment and configuration automation for the CTF platform."
+license:
+  - "Apache-2.0"
+repository: "https://github.com/rhpds/ansible-island-adventure"

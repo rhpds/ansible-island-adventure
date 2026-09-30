@@ -2,4 +2,23 @@
 # Human context, decisions, and notes that bridge sessions and people.
 # Not a task tracker — the manifest tracks structured progress.
 
-entries: []
+entries:
+  - date: 2026-09-30
+    author: AI assistant
+    summary: >-
+      Ran scaffold.py (agd-open pattern, ansible automation). Created all 6
+      content modules as AsciiDoc pages, updated antora.yml with project
+      attributes and nav.adoc with module links. Filled in the automation
+      manifest describing the OCP-CNV environment, operators, applications,
+      seed data, and provision data. Implemented healthcheck.yml (verifies
+      OCP API, Gitea, CTFd, Dev Spaces) and e2e.yml (adds Gitea repo,
+      CTFd API, and VM validation). Updated ansible automation collection
+      metadata. Set all module statuses to draft.
+    decisions:
+      - Content uses Showroom attributes ({user}, {password}, {ctfd_url}, etc.)
+        that map to provision_data published via set_stats.
+      - Healthcheck and e2e playbooks load .cnv.env and vars/main.yml to
+        dynamically discover cluster endpoints and instructor namespaces.
+      - Module content is based on the detailed outlines in
+        publishing-house/spec/modules/ and references real file paths and
+        role names from the existing ansible-testing/ automation.

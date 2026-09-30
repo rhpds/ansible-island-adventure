@@ -1,0 +1,226 @@
+= Play the Game
+:navtitle: 4. Play the Game
+
+== Receive Handouts and Orientation
+
+In a customer event, participants receive a printed or digital handout containing:
+
+* Login credentials (username and password)
+* Shortened URLs for CTFd, Gitea, AAP, and Dev Spaces
+* A brief overview of the challenge categories
+
+For this lab, your credentials are:
+
+* *Username:* `{user}`
+* *Password:* `{password}`
+
+Your service URLs:
+
+[cols="1,2",options="header"]
+|===
+| Service | URL
+
+| CTFd | {ctfd_url}
+| Gitea | {gitea_url}
+| AAP | {aap_url}
+| Dev Spaces | {devspaces_url}
+|===
+
+=== Log into CTFd
+
+. Open your CTFd instance: {ctfd_url}
+. Click *Register* or *Login* with your credentials.
+. You should see the challenge board with categories listed.
+
+== Warm Up Challenges
+
+These challenges get everyone started and verify basic access.
+
+=== Write Your Name in the Sand
+
+. In CTFd, click on your username in the top-right corner, then *Settings*.
+. Change your *User Name* to your real name (e.g., Jane Smith).
+. Change your *Email* to your real email address.
+. Return to the challenges page, open "Write your name in the sand," and submit the flag: `DONE`
+
+=== Unlock the Island
+
+The facilitator provides a key to unlock the remaining challenges.
+
+[NOTE]
+====
+In a customer event, *you* are the facilitator. You control when to reveal this key to pace the event.
+The unlock key is defined in `vars/flags.yml` (vault-encrypted).
+====
+
+=== Ansible Docs and Collections
+
+. *Ansible Docs* — Find the URL to the official Ansible documentation and submit it.
+. *Ansible Collections* — Find the community collection hub URL and submit it.
+. *Ansible Certified Collections* — Find the URL for Red Hat's certified content hub.
+
+[TIP]
+====
+Hints are available for each challenge at a point cost. In a customer event, encourage participants to use hints rather than getting stuck — engagement is more important than perfect scores.
+====
+
+== Let's Get Started Challenges
+
+These challenges verify that participants can access their environment tools.
+
+=== The Navigator's Run
+
+. Open your *Dev Spaces* workspace: {devspaces_url}
+. Open a terminal within the workspace.
+. Run the following command to find the Ansible core version:
++
+[source,bash]
+----
+ansible --version
+----
++
+. Submit the version number as your flag in CTFd.
+
+=== The High Tower Signal Strength
+
+. Open the *AAP Console*: {aap_url}
+. Log in with your credentials: `{user}` / `{password}`
+. Find the *Platform Version* on the dashboard or under the help menu (*?* icon → *About*).
+. Submit the platform version as your flag.
+
+=== AAP Controller Version
+
+. Still in the AAP Console, look for the *Controller version* — this is different from the Platform version.
+. Check the *About* dialog or the footer of the Automation Controller UI.
+. Submit the controller version as your flag.
+
+== At the Beach Challenges
+
+These challenges introduce Ansible CLI skills.
+
+=== Great Git-Away
+
+. Open *Gitea*: {gitea_url}
+. Log in with your credentials.
+. Find the repository that was created for you and note its name.
+. Submit the repository name as your flag in CTFd.
+
+=== Hello World Beach
+
+. In your Dev Spaces terminal, clone your repository from Gitea:
++
+[source,bash,subs="attributes"]
+----
+cd ~
+git clone https://{user}:{password}@$(echo {gitea_url} | sed 's|https://||')/{user}/ansible-challenge.git
+cd ansible-challenge
+----
++
+. Run the `hello-world.yml` playbook:
++
+[source,bash]
+----
+ansible-playbook hello-world.yml
+----
++
+. Watch the output for the keyword and submit it as your flag.
+
+=== Message in a Bottle at the Beach
+
+. In the `ansible-challenge` repository, find the file `message-in-a-bottle.txt`.
+. Decrypt it using Ansible Vault with the passphrase `redhat`:
++
+[source,bash]
+----
+ansible-vault view message-in-a-bottle.txt --ask-vault-pass
+----
++
+. Enter the passphrase `redhat` when prompted.
+. Submit the decrypted message as your flag.
+
+== Treasure Hunt Challenges
+
+These challenges use the *Ansible Automation Platform Controller* to orchestrate automation.
+
+=== Hello World Treasure Hunt
+
+. In the AAP Controller ({aap_url}), go to *Automation Execution → Projects*.
+. Click *Create project* and configure it:
+* *Name:* `ansible-challenge`
+* *Source Control Type:* Git
+* *Source Control URL:* Your Gitea repository URL
+* *Source Control Branch:* `treasurehunt`
+. Save and wait for the project to sync successfully.
+. Go to *Automation Execution → Templates* and click *Create template → Create job template*:
+* *Name:* `Hello World`
+* *Project:* `ansible-challenge`
+* *Playbook:* `hello-world.yml`
+* *Inventory:* Select an existing inventory (or create one with `localhost`)
+. Launch the job and find the keyword in the output.
+. Submit the keyword as your flag.
+
+=== Secret Message Treasure Hunt
+
+. Go to *Automation Execution → Infrastructure → Credentials*.
+. Click *Create credential*:
+* *Name:* `Vault Credential`
+* *Credential Type:* Vault
+* *Vault Password:* `AAP`
+. Create a new *Job Template*:
+* *Name:* `Secret Message`
+* *Project:* `ansible-challenge`
+* *Playbook:* `secret-word.yml`
+* *Credentials:* Add both the *Vault Credential* you just created and any required machine credential
+. Launch the job and find the secret message in the output.
+. Submit the secret message as your flag.
+
+=== You Found a Treasure Chest
+
+. Create a new *Job Template*:
+* *Name:* `Deploy Web Server`
+* *Project:* `ansible-challenge`
+* *Playbook:* `apache/apache_role_install.yml`
+* *Inventory:* Your instructor inventory
+* *Credentials:* Add both the *Machine Credential* and the *Vault Credential*
+* *Enable Privilege Escalation:* Check this option
+. Launch the job and wait for it to complete.
+. Use `curl` from your Dev Spaces terminal to access the web page on your managed node:
++
+[source,bash,subs="attributes"]
+----
+curl http://{managed_node}
+----
++
+. Find the treasure keyword in the response and submit it as your flag.
+
+== Side Quest and Trivia
+
+=== Ansible Quest Video Game
+
+The https://l3acon.github.io/ansible-quest/[Ansible Quest] is an interactive video game that teaches Ansible developer tool concepts through exploration.
+
+. Open the Side Quest challenges in CTFd.
+. Launch the Ansible Quest game from the challenge description link.
+. Explore the game world and find treasure chests containing flags for tools like `ansible-creator`, `ansible-lint`, `ansible-navigator`, `molecule`, and more.
+. Submit each flag you discover.
+
+=== Trivia Challenges
+
+. *Marooned on World 62* — Who created the Ansible automation tool? Submit their first and last name.
+. *No Strings on the Shoreline* — Which heavyweight, Ruby-based configuration management tools inspired Ansible's agentless design?
+
+== Debrief and Discussion
+
+After completing the challenges, reflect on the experience from a *facilitator's perspective*:
+
+* *Which challenges resonated most?* — At the Beach and Treasure Hunt provide the deepest hands-on learning.
+* *Where did participants struggle?* — Common blockers include Gitea clone URLs, vault password confusion, and credential configuration in AAP.
+* *How does audience composition affect pacing?* — Technical audiences blaze through Warm Up; non-technical audiences need more roamer support during At the Beach.
+* *What would you customize for your customers?* — Module 5 covers how to modify challenge content.
+
+== Key Takeaways
+
+* Playing through the event as a participant is essential for effective facilitation — you must know the challenges firsthand.
+* The challenge progression moves from basic Ansible awareness through CLI proficiency to controller orchestration, covering a wide skill spectrum.
+* The scoring and hint system balances challenge difficulty with accessibility, keeping all skill levels engaged.
+* Understanding which challenges resonate with different audiences helps you customize and pace future customer events.

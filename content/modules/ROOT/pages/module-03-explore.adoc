@@ -1,0 +1,164 @@
+= Explore the Environment
+:navtitle: 3. Explore the Environment
+
+== Architecture Tour on OpenShift
+
+Your Ansible Island Adventure environment is fully deployed on a shared OpenShift cluster.
+In this section you will tour the running architecture and verify that all services are accessible.
+
+=== Log into the OpenShift Console
+
+. Open the OpenShift Console: {ocp_console_url}
+. Log in with your credentials: `{user}` / `{password}`
+. After login, you should see the OpenShift web console dashboard.
+
+=== Identify Running Services
+
+From the OpenShift console, navigate to *Workloads → Pods* and explore the following namespaces:
+
+[cols="1,2,2",options="header"]
+|===
+| Service | Namespace | Purpose
+
+| *CTFd*
+| `{user}-ctfd`
+| Your personal CTF scoring platform instance
+
+| *MariaDB*
+| `{user}-ctfd`
+| Database backend for CTFd
+
+| *Redis*
+| `{user}-ctfd`
+| Cache layer for CTFd
+
+| *Gitea*
+| `gitea`
+| Shared Git hosting (your repos are under your user account)
+
+| *AAP Controller*
+| Shared AAP namespace
+| Ansible Automation Platform — your organization is `{user}`
+
+| *Dev Spaces*
+| `openshift-devspaces`
+| Browser-based IDE workspace
+
+| *Managed Node VM*
+| `{user}-lab`
+| RHEL 9 virtual machine for Ansible challenges
+|===
+
+=== Verify Service Access
+
+Open each service URL in your browser and confirm you can log in:
+
+[cols="1,2",options="header"]
+|===
+| Service | URL
+
+| CTFd | {ctfd_url}
+| Gitea | {gitea_url}
+| AAP | {aap_url}
+| Dev Spaces | {devspaces_url}
+| OpenShift Console | {ocp_console_url}
+|===
+
+[TIP]
+====
+Use the same credentials (`{user}` / `{password}`) for all services.
+====
+
+== Deployment Artifacts Walkthrough
+
+The environment was deployed using an Ansible playbook. Understanding these artifacts helps you troubleshoot and customize the platform.
+
+=== Playbook Structure
+
+The deployment playbook (`ansible-testing/deploy.yml`) follows this execution order:
+
+[source,text]
+----
+pre_tasks:
+  ├── Load CNV resource claim (.cnv.env)
+  ├── Extract cluster credentials
+  ├── Login to OpenShift as cluster-admin
+  └── Build instructor list
+
+tasks:
+  ├── Phase 0: Cluster-wide setup (cluster_setup)
+  ├── Phase 0: Deploy shared Gitea (shared_gitea)
+  ├── Phase 1: Per-instructor infrastructure (instructor)
+  ├── Phase 2: Configure Gitea users and repos (configure_gitea)
+  ├── Phase 2: Build and upload CTFd archives (configure_ctfd)
+  ├── Phase 3: Provision instructor VMs (vms.yml)
+  ├── Phase 4: Configure AAP inventories and credentials (configure_aap)
+  └── Phase 5: Build and publish handout data (set_stats)
+----
+
+=== Key Roles
+
+[cols="1,3",options="header"]
+|===
+| Role | What It Does
+
+| `cluster_setup`
+| Installs cluster-wide operators (AAP 2.7, Dev Spaces, OpenShift Virtualization)
+
+| `shared_gitea`
+| Deploys a shared Gitea instance with PostgreSQL
+
+| `instructor`
+| Creates per-instructor namespaces, CTFd stacks, and lab resources
+
+| `configure_gitea`
+| Creates Gitea user accounts and forks the `ansible-challenge` repository
+
+| `configure_ctfd`
+| Builds CTFd challenge archives with vault-encrypted flags and imports them
+
+| `configure_aap`
+| Sets up per-instructor AAP organizations, inventories, and machine credentials
+|===
+
+=== Stateful Files
+
+Three files bridge the platform provisioning and the deployment automation:
+
+[cols="1,3",options="header"]
+|===
+| File | Purpose
+
+| `.cnv.env`
+| ResourceClaim from RHDP — contains cluster API URL, credentials, apps domain, and user list
+
+| `vars/flags.yml`
+| Vault-encrypted challenge flag values — decrypted at deploy time using `.vault-password`
+
+| `vars/challenges.yml`
+| Challenge definitions — categories, point values, descriptions, hints, and flag references
+|===
+
+The deployer reads `.cnv.env` to discover the cluster and build the instructor list. Flags are encrypted so they cannot be read from the repository.
+
+== RHDP Ordering and Provisioning Flow
+
+For your own customer events, the workflow is:
+
+. *Order from RHDP* — Search for "Ansible Island Adventure" in the https://catalog.demo.redhat.com[Red Hat Demo Platform catalog] and order the catalog item.
+. *Wait for provisioning* — The platform provisions a shared OpenShift CNV cluster and runs the deployment playbook automatically. This takes approximately 60 minutes.
+. *Receive credentials* — RHDP provides cluster credentials and instructor handout data via the service details page.
+. *Verify and customize* — Log in, verify all services, and customize challenges if needed (see Module 5).
+. *Distribute handouts* — Share participant credentials and URLs before or at the start of the event.
+
+[NOTE]
+====
+The environment arrives *fully deployed*. You do not need to run the deployment playbook for customer events — it runs automatically during provisioning.
+====
+
+== Key Takeaways
+
+* The environment arrives fully deployed from RHDP — no manual installation is required for customer events.
+* The deployment playbook and roles are provided as artifacts so facilitators understand what was deployed and can customize it.
+* Three stateful files (`.cnv.env`, `vars/flags.yml`, `vars/challenges.yml`) bridge the platform provisioning and the deployment automation.
+* Ordering from RHDP is the supported path for running customer-facing events.
