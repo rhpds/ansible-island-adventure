@@ -45,8 +45,8 @@ From the OpenShift console, navigate to *Workloads → Pods* and explore the fol
 | Browser-based IDE workspace
 
 | *Managed Node VM*
-| `{user}-lab`
-| RHEL 9 virtual machine for Ansible challenges
+| Student environment
+| RHEL 9 virtual machine for Ansible challenges (provisioned by the student catalog item, not on this cluster)
 |===
 
 === Verify Service Access
@@ -80,7 +80,7 @@ The deployment playbook (`ansible-testing/deploy.yml`) uses a role-based structu
 [source,text]
 ----
 pre_tasks:
-  ├── Load resource claim (rosa.creds / .cnv.env)
+  ├── Load resource claim (.cnv.env)
   ├── Extract cluster credentials
   ├── Login to OpenShift as cluster-admin
   └── Build instructor list from player.creds
@@ -88,7 +88,6 @@ pre_tasks:
 tasks (roles in execution order):
   ├── cluster_scale    → Scale worker nodes and install operators
   ├── players          → Create per-instructor namespaces and accounts
-  ├── managed_nodes    → Provision RHEL 9 VMs via OpenShift Virtualization
   ├── devspaces        → Deploy Red Hat OpenShift Dev Spaces
   ├── ctfd             → Deploy per-instructor CTFd instances
   ├── gitea            → Deploy shared Gitea and fork repos per instructor
@@ -96,7 +95,7 @@ tasks (roles in execution order):
   └── verifier         → Deploy per-instructor challenge verifier sidecars
 ----
 
-In the current implementation, these logical stages are organized into Ansible roles such as `cluster_setup`, `shared_gitea`, `instructor`, `configure_gitea`, `configure_ctfd`, and `configure_aap`. The role names may evolve, but the deployment stages remain the same.
+The managed node VM is provisioned separately by the student catalog item — it is not part of this deployer. In the current implementation, these logical stages are organized into Ansible roles such as `cluster_setup`, `shared_gitea`, `instructor`, `configure_gitea`, `configure_ctfd`, and `configure_aap`. The role names may evolve, but the deployment stages remain the same.
 
 === Key Roles
 
@@ -105,13 +104,10 @@ In the current implementation, these logical stages are organized into Ansible r
 | Logical Stage | What It Does
 
 | `cluster_scale`
-| Scales worker nodes and installs cluster-wide operators (AAP 2.7, Dev Spaces, OpenShift Virtualization)
+| Scales worker nodes and installs cluster-wide operators (AAP 2.7, Dev Spaces)
 
 | `players`
 | Creates per-instructor namespaces, user accounts, and cached credentials (`player.creds`)
-
-| `managed_nodes`
-| Provisions RHEL 9 virtual machines via OpenShift Virtualization with cloud-init and SSH access via `keys/`
 
 | `devspaces`
 | Deploys Red Hat OpenShift Dev Spaces for browser-based IDE access
@@ -131,30 +127,29 @@ In the current implementation, these logical stages are organized into Ansible r
 
 === Stateful Files
 
-Three key files coordinate deployment state and bridge the platform provisioning and the deployment automation:
+Two key files coordinate deployment state and bridge the platform provisioning and the deployment automation:
 
 [cols="1,3",options="header"]
 |===
 | File | Purpose
 
-| `rosa.creds` (or `.cnv.env`)
-| ResourceClaim from RHDP — contains cluster API URL, admin credentials, apps domain, and user list. The platform provides this file to students automatically when the environment is provisioned.
+| `.cnv.env`
+| ResourceClaim from RHDP — contains cluster API URL, admin credentials, apps domain, and user list. The platform provides this file automatically when the environment is provisioned.
 
 | `player.creds`
 | Cached per-instructor credentials — passwords and verification tokens generated on the first run and reused on subsequent runs. This cache-or-generate pattern ensures credential stability across re-deployments.
-
-| `keys/`
-| SSH keypair directory — contains the SSH keys used to access managed node VMs. Generated once and cached so that managed nodes remain accessible across re-runs.
 |===
 
-The deployer loads `rosa.creds` (or `.cnv.env`) to discover the cluster and build the instructor list. On the first run, it generates `player.creds` and `keys/`; on subsequent runs, it loads the cached versions to avoid regenerating passwords or SSH keys. Flags are vault-encrypted in `vars/flags.yml` so they cannot be read from the repository.
+The deployer loads `.cnv.env` to discover the cluster and build the instructor list. On the first run, it generates `player.creds`; on subsequent runs, it loads the cached version to avoid regenerating passwords. Flags are vault-encrypted in `vars/flags.yml` so they cannot be read from the repository.
+
+NOTE: The managed node VM and its SSH access are provisioned separately by the student catalog item — they are not managed by the leaderboard deployer.
 
 == RHDP Ordering and Provisioning Flow
 
 For your own customer events, the workflow is:
 
 . *Order from RHDP* — Search for "Ansible Island Adventure" in the https://catalog.demo.redhat.com[Red Hat Demo Platform catalog] and order the catalog item.
-. *Wait for provisioning* — The platform provisions a shared OpenShift CNV cluster and runs the deployment playbook automatically. This takes approximately 60 minutes.
+. *Wait for provisioning* — The platform provisions a shared OpenShift cluster and runs the deployment playbook automatically. This takes approximately 60 minutes.
 . *Receive credentials* — RHDP provides cluster credentials and instructor handout data via the service details page.
 . *Verify and customize* — Log in, verify all services, and customize challenges if needed (see Module 5).
 . *Distribute handouts* — Share participant credentials and URLs before or at the start of the event.
@@ -168,5 +163,5 @@ The environment arrives *fully deployed*. You do not need to run the deployment 
 
 * The environment arrives fully deployed from RHDP — no manual installation is required for customer events.
 * The deployment playbook and roles are provided as artifacts so facilitators understand what was deployed and can customize it.
-* Three stateful files (`.cnv.env`, `vars/flags.yml`, `vars/challenges.yml`) bridge the platform provisioning and the deployment automation.
+* Stateful files (`.cnv.env`, `player.creds`) bridge the platform provisioning and the deployment automation.
 * Ordering from RHDP is the supported path for running customer-facing events.

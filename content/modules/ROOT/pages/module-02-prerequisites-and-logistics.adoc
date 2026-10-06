@@ -5,14 +5,20 @@
 
 The core requirement is simple: a *pre-deployed Ansible Island Adventure environment* ordered from the https://catalog.demo.redhat.com[Red Hat Demo Platform (RHDP)].
 
-The RHDP catalog item provisions a shared OpenShift CNV cluster with all services pre-deployed:
+The RHDP catalog items provision the full environment across two deployments:
+
+*Leaderboard environment* (shared cluster):
 
 * *Ansible Automation Platform 2.7* — Gateway and Controller, with per-instructor organizations
 * *CTFd* — Per-instructor CTF scoring instances
 * *Gitea* — Shared Git hosting with per-instructor repositories
 * *Red Hat OpenShift Dev Spaces* — Browser-based IDE for participants
-* *RHEL 9 managed nodes* — One VM per instructor, provisioned via OpenShift Virtualization
 * *MariaDB and Redis* — Backend databases for CTFd instances
+
+*Student environment* (per-participant):
+
+* *RHEL 9 managed node* — A dedicated VM for Ansible challenges, provisioned separately by the student catalog item
+* *Bastion access* — SSH access to the managed node
 
 [IMPORTANT]
 ====

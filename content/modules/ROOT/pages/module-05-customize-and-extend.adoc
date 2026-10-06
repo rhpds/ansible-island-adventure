@@ -206,10 +206,9 @@ This section demonstrates the full workflow for ordering a fresh RHDP environmen
 
 . Once provisioning completes, open the service details page in RHDP.
 . You will receive:
-** *Cluster API URL and admin credentials* — in the `rosa.creds` (or `.cnv.env`) file
+** *Cluster API URL and admin credentials* — in the `.cnv.env` file
 ** *Instructor usernames and passwords* — auto-generated and cached in `player.creds`
-** *SSH keys* — for managed node access, stored in `keys/`
-. No `player.creds` or `keys/` exist on a fresh environment — the deployer generates them automatically on the first run.
+. No `player.creds` exists on a fresh environment — the deployer generates it automatically on the first run. The managed node VM is provisioned separately by the student catalog item.
 
 ==== Step 3: Customize and Deploy
 
