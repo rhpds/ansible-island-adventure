@@ -14,5 +14,5 @@ www/
 
 # Deploy output
 deploy-output.json
-provision-fields.txt
-provision-data.yaml
+utils/.leaderboard.yaml
+utils/.student.yaml
