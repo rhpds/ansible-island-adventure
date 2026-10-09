@@ -1,0 +1,63 @@
+---
+- name: Check if oc is installed
+  ansible.builtin.command: which oc
+  register: _oc_check
+  changed_when: false
+  failed_when: false
+
+- name: Download and install oc CLI from cluster
+  when: _oc_check.rc != 0
+  block:
+    - name: Download oc tarball
+      ansible.builtin.get_url:
+        url: "{{ openshift_client_download_url }}"
+        dest: /tmp/oc.tar.gz
+        validate_certs: false
+        mode: "0644"
+
+    - name: Extract oc binary
+      ansible.builtin.unarchive:
+        src: /tmp/oc.tar.gz
+        dest: /usr/local/bin
+        remote_src: true
+        include:
+          - oc
+        mode: "0755"
+      become: true
+
+    - name: Remove oc tarball
+      ansible.builtin.file:
+        path: /tmp/oc.tar.gz
+        state: absent
+      become: true
+
+- name: Login to OCP cluster
+  ansible.builtin.shell: >-
+    oc login {{ ocp_api_url }}
+    --username={{ ocp_admin_user }}
+    --password={{ ocp_admin_password }}
+    --insecure-skip-tls-verify=true
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  changed_when: false
+  no_log: false
+
+
+- name: "{{ instructor.name }} — Create namespaces"
+  ansible.builtin.include_tasks: namespaces.yml
+
+- name: "{{ instructor.name }} — Deploy CTFd stack"
+  ansible.builtin.include_tasks: ctfd_install.yml
+
+
+- name: "{{ instructor.name }} — Configure Gitea users and repos"
+  ansible.builtin.include_tasks: gitea.yml
+
+- name: "{{ instructor.name }} — Create Keycloak SSO user"
+  ansible.builtin.include_tasks: keycloak.yml
+
+- name: "{{ instructor.name }} — Configure AAP org and access"
+  ansible.builtin.include_tasks: aap.yml
+
+- name: "{{ instructor.name }} — Configure CTFd"
+  ansible.builtin.include_tasks: ctfd_config.yml

@@ -1,0 +1,63 @@
+---
+# Create instructor Gitea users and fork repos.
+
+- name: Set Gitea API base URL
+  ansible.builtin.set_fact:
+    _gitea_api: "{{ gitea_url }}/api/v1"
+
+# ── Per-instructor users and repos ───────────────────────────────
+- name: Create instructor Gitea users
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/admin/users"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ instructor.name }}"
+      password: "{{ instructor.password }}"
+      email: "{{ instructor.name }}@island.local"
+      must_change_password: false
+      login_name: "{{ instructor.name }}"
+      source_id: 0
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 422]
+
+
+- name: Update instructor Gitea passwords
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/admin/users/{{ instructor.name }}"
+    method: PATCH
+    body_format: json
+    body:
+      password: "{{ instructor.password }}"
+      login_name: "{{ instructor.name }}"
+      source_id: 0
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+
+
+- name: Fork repos into each instructor's account
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/repos/starter/{{ instructor_repos[0].name }}/forks"
+    method: POST
+    body_format: json
+    body: {}
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    headers:
+      Sudo: "{{ instructor.name }}"
+    status_code: [202, 409]
+
+
+# - name: Report Gitea configuration complete
+#   ansible.builtin.debug:
+#     msg: >-
+#       Gitea configured: {{ instructors | length }} instructor users created
+#       with {{ instructor_repos | length }} repo(s) each
