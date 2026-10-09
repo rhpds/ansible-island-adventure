@@ -54,7 +54,7 @@ aap_admin_password: "{{ openshift_cluster_common_password }}"
 # -------------------------------------------------------------------
 ctfd_image: "ctfd/ctfd:3.7.7"
 ctfd_admin_username: admin
-ctfd_admin_password: ""
+ctfd_admin_password: "{{ common_password }}"
 ctfd_admin_email: admin@example.com
 ctfd_logs_pvc_size: 1Gi
 ctfd_uploads_pvc_size: 1Gi
