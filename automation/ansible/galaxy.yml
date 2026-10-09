@@ -1,6 +1,6 @@
 ---
-namespace: "rhpds"
-name: "aia"
+namespace: "ansible_island_adventure"
+name: "automation"
 version: "1.0.0"
 readme: README.md
 authors:
