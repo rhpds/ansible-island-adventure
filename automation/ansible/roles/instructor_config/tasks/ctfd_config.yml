@@ -207,8 +207,8 @@
             from CTFd.utils.crypto import hash_password
             results = []
             for uname, upass, uemail, utype in [
-                ("{{ instructor.name }}", "{{ instructor.password }}", "{{ instructor.name }}@island.local", "user"),
-                ("student", "{{ instructor.password }}", "student@island.local", "user"),
+                ("{{ ctfd_admin_username }}", "{{ common_password }}", "{{ ctfd_admin_email }}", "admin"),
+                ("{{ student_name }}", "{{ common_password }}", "{{ student_name }}@island.local", "user"),
             ]:
                 existing = Users.query.filter_by(name=uname).first()
                 if existing:
@@ -271,7 +271,7 @@
     msg: >-
       CTFd for {{ instructor.name }}:
       {{ _loaded_challenge_count }} challenges at {{ _ctfd_base_url }}.
-      Users: admin ({{ ctfd_admin_username }}), instructor ({{ instructor.name }}), student.
+      Users: admin ({{ ctfd_admin_username }}), student ({{ student_name }}).
 
 - name: "{{ instructor.name }} — Cleanup temp directory"
   ansible.builtin.file:
@@ -283,13 +283,11 @@
     msg: |
       CTFd (Ansible Island CTF Platform):
         URL:          https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}
-        Admin:        {{ ctfd_admin_username }} / {{ ctfd_admin_password }}
-        Instructor:   {{ instructor.name }} / {{ instructor.password }}
-        Student:      student / {{ instructor.password }}
+        Admin:        {{ ctfd_admin_username }} / {{ common_password }}
+        Student:      {{ student_name }} / {{ common_password }}
     data:
       ctfd_url: "https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}"
       ctfd_admin_username: "{{ ctfd_admin_username }}"
-      ctfd_admin_password: "{{ ctfd_admin_password }}"
-      ctfd_instructor_username: "{{ instructor.name }}"
-      ctfd_student_username: "student"
-      ctfd_student_password: "{{ instructor.password }}"
+      ctfd_admin_password: "{{ common_password }}"
+      ctfd_student_username: "{{ student_name }}"
+      ctfd_student_password: "{{ common_password }}"

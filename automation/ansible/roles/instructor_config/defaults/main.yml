@@ -30,6 +30,9 @@ openshift_client_download_url: >-
 # -------------------------------------------------------------------
 # Instructor vars
 # -------------------------------------------------------------------
+common_password: "{{ openshift_cluster_common_password }}"
+student_name: "lab-user"
+
 instructor:
   name: "instructor-{{ guid }}"
   ctfd_ns: "instructor-{{ guid }}-ctfd"
