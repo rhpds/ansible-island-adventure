@@ -113,7 +113,7 @@
 - name: "{{ instructor.name }} — Setup, login, and import CTFd archive"
   when: (_existing_challenges.stdout_lines | default(['0']) | last | trim | int) == 0
   ansible.builtin.shell: |
-    set -e
+    set -eo pipefail
     URL="{{ _ctfd_base_url }}"
     ADMIN="{{ ctfd_admin_username }}"
     PASS="{{ ctfd_admin_password }}"
@@ -122,33 +122,66 @@
     COOKIES=$(mktemp)
     trap "rm -f $COOKIES" EXIT
 
+    # Step 1: Complete initial setup if needed
     SETUP_CODE=$(curl -sk -o /dev/null -w '%{http_code}' "$URL/setup")
     if [ "$SETUP_CODE" = "200" ]; then
-      NONCE=$(curl -sk "$URL/setup" -c "$COOKIES" | grep -oP 'name="nonce"[^>]+value="\K[0-9a-f]+')
-      curl -sk "$URL/setup" -b "$COOKIES" -c "$COOKIES" -X POST \
+      NONCE=$(curl -sk "$URL/setup" -c "$COOKIES" -b "$COOKIES" \
+        | python3 -c "import re,sys; m=re.search(r'name=\"nonce\"[^>]*value=\"([^\"]+)\"', sys.stdin.read()); print(m.group(1) if m else '')")
+      if [ -z "$NONCE" ]; then
+        echo "ERROR: Could not extract setup nonce"
+        exit 1
+      fi
+      SETUP_RESULT=$(curl -sk -o /dev/null -w '%{http_code}' \
+        -b "$COOKIES" -c "$COOKIES" -L \
         -d "nonce=$NONCE&ctf_name=Island+Adventure&ctf_description=CTF&user_mode=users&name=$ADMIN&email=$EMAIL&password=$PASS" \
-        -o /dev/null
-      sleep 2
+        "$URL/setup")
+      echo "SETUP: $SETUP_RESULT"
+      sleep 3
     fi
 
-    NONCE=$(curl -sk "$URL/login" -c "$COOKIES" | grep -oP 'name="nonce"[^>]+value="\K[0-9a-f]+')
-    curl -sk "$URL/login" -b "$COOKIES" -c "$COOKIES" -X POST \
-      -d "nonce=$NONCE&name=$ADMIN&password=$PASS" -o /dev/null
-
-    CSRF=$(curl -sk "$URL/admin/import" -b "$COOKIES" | grep -oP "'csrfNonce':\s*\"([0-9a-f]+)\"" | grep -oP '[0-9a-f]{64}')
-    if [ -z "$CSRF" ]; then
-      echo "ERROR: Could not get CSRF nonce"
+    # Step 2: Login as admin
+    NONCE=$(curl -sk "$URL/login" -c "$COOKIES" -b "$COOKIES" \
+      | python3 -c "import re,sys; m=re.search(r'name=\"nonce\"[^>]*value=\"([^\"]+)\"', sys.stdin.read()); print(m.group(1) if m else '')")
+    if [ -z "$NONCE" ]; then
+      echo "ERROR: Could not extract login nonce"
+      exit 1
+    fi
+    LOGIN_RESULT=$(curl -sk -o /dev/null -w '%{http_code}' \
+      -b "$COOKIES" -c "$COOKIES" -L \
+      -d "name=$ADMIN&password=$PASS&nonce=$NONCE" \
+      "$URL/login")
+    if [ "$LOGIN_RESULT" != "200" ] && [ "$LOGIN_RESULT" != "302" ]; then
+      echo "ERROR: Login failed with HTTP $LOGIN_RESULT"
       exit 1
     fi
 
-    curl -sk "$URL/admin/import" -b "$COOKIES" -X POST \
-      -F "nonce=$CSRF" -F "backup=@$ARCHIVE" -o /dev/null
+    # Step 3: Get CSRF nonce from admin import page
+    IMPORT_PAGE=$(curl -sk "$URL/admin/import" -b "$COOKIES")
+    CSRF=$(echo "$IMPORT_PAGE" | python3 -c "import re,sys; m=re.search(r'csrfNonce.*?([0-9a-f]{64})', sys.stdin.read()); print(m.group(1) if m else '')")
+    if [ -z "$CSRF" ]; then
+      echo "ERROR: Could not get CSRF nonce — may not be logged in as admin"
+      exit 1
+    fi
 
-    echo "SUCCESS: Archive uploaded"
+    # Step 4: Upload archive
+    IMPORT_RESULT=$(curl -sk -o /dev/null -w '%{http_code}' \
+      -b "$COOKIES" \
+      -F "nonce=$CSRF" -F "backup=@$ARCHIVE" \
+      "$URL/admin/import")
+    if [ "$IMPORT_RESULT" != "200" ] && [ "$IMPORT_RESULT" != "302" ]; then
+      echo "ERROR: Archive import failed with HTTP $IMPORT_RESULT"
+      exit 1
+    fi
+
+    echo "SUCCESS: Archive uploaded (HTTP $IMPORT_RESULT)"
+  args:
+    executable: /bin/bash
   register: _ctfd_import
   changed_when: "'SUCCESS' in (_ctfd_import.stdout | default(''))"
-  failed_when: "'ERROR' in (_ctfd_import.stdout | default(''))"
-  no_log: true
+  failed_when: >-
+    _ctfd_import.rc != 0 or
+    'ERROR' in (_ctfd_import.stdout | default(''))
+  no_log: false
 
 - name: "{{ instructor.name }} — Wait for import to settle"
   ansible.builtin.pause:

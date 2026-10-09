@@ -43,6 +43,11 @@
   no_log: false
 
 
+- name: Load challenge definitions (if not already provided)
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/vars/challenges.yml"
+  when: ctfd_challenges | length == 0
+
 - name: "{{ instructor.name }} — Create namespaces"
   ansible.builtin.include_tasks: namespaces.yml
 
