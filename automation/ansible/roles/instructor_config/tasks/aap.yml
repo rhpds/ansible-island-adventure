@@ -80,8 +80,14 @@
     validate_certs: false
     status_code: [201, 400, 409]
 
-- name: "{{ instructor.name }} — Report AAP org configured"
-  ansible.builtin.debug:
-    msg: >-
-      AAP org '{{ instructor.name }}' — instructor is Org Admin.
-      Login: {{ aap_url }} with {{ instructor.name }} / {{ instructor.password }}
+- name: "{{ instructor.name }} — Publish AAP info"
+  agnosticd.core.agnosticd_user_info:
+    msg: |
+      Ansible Automation Platform:
+        URL:      {{ aap_url }}
+        Username: {{ instructor.name }}
+        Password: {{ instructor.password }}
+    data:
+      aap_url: "{{ aap_url }}"
+      aap_username: "{{ instructor.name }}"
+      aap_password: "{{ instructor.password }}"

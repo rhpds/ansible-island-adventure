@@ -67,6 +67,16 @@
     status_code: 204
   no_log: true
 
-- name: "{{ instructor.name }} — Report SSO user created"
-  ansible.builtin.debug:
-    msg: "Keycloak SSO user '{{ instructor.name }}' created in realm: sso"
+- name: "{{ instructor.name }} — Publish Keycloak SSO info"
+  agnosticd.core.agnosticd_user_info:
+    msg: |
+      Keycloak SSO:
+        URL:      {{ keycloak_admin_console }}
+        Username: {{ instructor.name }}
+        Password: {{ instructor.password }}
+        Realm:    sso
+    data:
+      keycloak_url: "{{ keycloak_admin_console }}"
+      keycloak_username: "{{ instructor.name }}"
+      keycloak_password: "{{ instructor.password }}"
+      keycloak_realm: sso

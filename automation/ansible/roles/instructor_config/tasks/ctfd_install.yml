@@ -341,3 +341,11 @@
         tls:
           termination: edge
           insecureEdgeTerminationPolicy: Redirect
+
+- name: "{{ instructor.name }} — Publish Verifier info"
+  agnosticd.core.agnosticd_user_info:
+    msg: |
+      Verifier:
+        URL: https://verifier-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}
+    data:
+      verifier_url: "https://verifier-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}"

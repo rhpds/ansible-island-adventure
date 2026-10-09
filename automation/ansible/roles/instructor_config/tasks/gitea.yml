@@ -56,8 +56,14 @@
     status_code: [202, 409]
 
 
-# - name: Report Gitea configuration complete
-#   ansible.builtin.debug:
-#     msg: >-
-#       Gitea configured: {{ instructors | length }} instructor users created
-#       with {{ instructor_repos | length }} repo(s) each
+- name: "{{ instructor.name }} — Publish Gitea info"
+  agnosticd.core.agnosticd_user_info:
+    msg: |
+      Gitea (Source Control):
+        URL:      {{ gitea_url }}
+        Username: {{ instructor.name }}
+        Password: {{ instructor.password }}
+    data:
+      gitea_url: "{{ gitea_url }}"
+      gitea_username: "{{ instructor.name }}"
+      gitea_password: "{{ instructor.password }}"
