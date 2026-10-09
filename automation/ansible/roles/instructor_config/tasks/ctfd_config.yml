@@ -47,6 +47,7 @@
     - flags
     - hints
     - config
+    - users
 
 - name: "{{ instructor.name }} — Convert YAML DB files to JSON"
   ansible.builtin.copy:
@@ -154,7 +155,7 @@
     seconds: 25
 
 # ── Create instructor user via CTFd internals (no passlib needed) ─
-- name: "{{ instructor.name }} — Create instructor user in CTFd"
+- name: "{{ instructor.name }} — Create/update CTFd users (instructor + student)"
   ansible.builtin.command:
     argv:
       - oc
@@ -171,21 +172,28 @@
         with app.app_context():
             from CTFd.models import Users, db
             from CTFd.utils.crypto import hash_password
-            existing = Users.query.filter_by(name="{{ instructor.name }}").first()
-            if existing:
-                existing.password = hash_password("{{ instructor.password }}")
-                db.session.commit()
-                print("UPDATED")
-            else:
-                user = Users(
-                    name="{{ instructor.name }}",
-                    email="{{ instructor.name }}@island.local",
-                    password=hash_password("{{ instructor.password }}"),
-                    type="user"
-                )
-                db.session.add(user)
-                db.session.commit()
-                print("CREATED")
+            results = []
+            for uname, upass, uemail, utype in [
+                ("{{ instructor.name }}", "{{ instructor.password }}", "{{ instructor.name }}@island.local", "user"),
+                ("student", "{{ instructor.password }}", "student@island.local", "user"),
+            ]:
+                existing = Users.query.filter_by(name=uname).first()
+                if existing:
+                    existing.password = hash_password(upass)
+                    db.session.commit()
+                    results.append(f"UPDATED:{uname}")
+                else:
+                    user = Users(
+                        name=uname,
+                        email=uemail,
+                        password=hash_password(upass),
+                        type=utype,
+                    )
+                    db.session.add(user)
+                    db.session.commit()
+                    results.append(f"CREATED:{uname}")
+            for r in results:
+                print(r)
   register: _ctfd_user
   changed_when: "'CREATED' in (_ctfd_user.stdout | default(''))"
   no_log: true
@@ -223,7 +231,8 @@
     msg: >-
       CTFd for {{ instructor.name }}:
       {{ (_challenge_count.stdout | regex_search('CHALLENGE_COUNT:(\d+)', '\1') | first) if _all_challenges | length > 0 else '0 (no challenges defined)' }}
-      challenges, user {{ _ctfd_user.stdout | trim }} at {{ _ctfd_base_url }}
+      challenges at {{ _ctfd_base_url }}.
+      Users: admin ({{ ctfd_admin_username }}), instructor ({{ instructor.name }}), student.
 
 - name: "{{ instructor.name }} — Cleanup temp directory"
   ansible.builtin.file:
@@ -234,10 +243,14 @@
   agnosticd.core.agnosticd_user_info:
     msg: |
       CTFd (Ansible Island CTF Platform):
-        URL:      https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}
-        Username: {{ ctfd_admin_username }}
-        Password: {{ ctfd_admin_password }}
+        URL:          https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}
+        Admin:        {{ ctfd_admin_username }} / {{ ctfd_admin_password }}
+        Instructor:   {{ instructor.name }} / {{ instructor.password }}
+        Student:      student / {{ instructor.password }}
     data:
       ctfd_url: "https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}"
-      ctfd_username: "{{ ctfd_admin_username }}"
-      ctfd_password: "{{ ctfd_admin_password }}"
+      ctfd_admin_username: "{{ ctfd_admin_username }}"
+      ctfd_admin_password: "{{ ctfd_admin_password }}"
+      ctfd_instructor_username: "{{ instructor.name }}"
+      ctfd_student_username: "student"
+      ctfd_student_password: "{{ instructor.password }}"
