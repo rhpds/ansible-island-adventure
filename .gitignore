@@ -14,5 +14,12 @@ www/
 
 # Deploy output
 deploy-output.json
+provision-fields.txt
+provision-data.yaml
+
+# Provisioner data (contains credentials)
+job-vars.json
+job_*.txt
+ansible-error.txt
 utils/.leaderboard.yaml
 utils/.student.yaml
