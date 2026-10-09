@@ -238,7 +238,7 @@
                 print(r)
   register: _ctfd_user
   changed_when: "'CREATED' in (_ctfd_user.stdout | default(''))"
-  no_log: true
+  no_log: false
   environment:
     PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
 
