@@ -98,13 +98,37 @@ results:
     value: ca8dfa1ec30485b5a9ee8d823ad9c62f/Red_Hat_logo.svg.png
   - id: 33
     key: theme_header
-    value: >-
+    value: |-
+      <style>
+      #catalyst-banner {
+          width: 100%;
+          height: 340px;
+          background-image: url("/files/7c4d437d1dc2b13816fe3f71d8361708/catalyst-logo.png");
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          display: block;
+          margin: 0 0 -55px 0;
+          padding: 0;
+          border: 0;
+      }
+      </style>
       <style id="theme-color">
       :root {--theme-color: #0f1b2d;}
       main { padding: 0; }
       .navbar{background-color: var(--theme-color) !important;}
       .jumbotron{background-color: var(--theme-color) !important;}
       </style>
+      <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          if (document.getElementById("catalyst-banner")) { return; }
+          const navbar = document.querySelector("nav");
+          if (!navbar) { return; }
+          const banner = document.createElement("div");
+          banner.id = "catalyst-banner";
+          navbar.insertAdjacentElement("afterend", banner);
+      });
+      </script>
   - id: 34
     key: theme_settings
     value: '{"challenge_window_size": "lg"}'
