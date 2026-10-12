@@ -258,12 +258,14 @@
 
 # ── Verifier ─────────────────────────────────────────────────────
 - name: "{{ instructor.name }} — Generate HMAC secret for verifier"
+  when: instructor_config_deploy_verifier | bool
   ansible.builtin.set_fact:
     _verifier_hmac: >-
       {{ verifier_hmac_secret if (verifier_hmac_secret | length > 0)
          else (lookup('password', '/dev/null length=32 chars=hexdigits') | lower) }}
 
 - name: "{{ instructor.name }} — Deploy Verifier"
+  when: instructor_config_deploy_verifier | bool
   kubernetes.core.k8s:
     state: present
     definition:
@@ -307,6 +309,7 @@
                   optional: true
 
 - name: "{{ instructor.name }} — Create Verifier Service"
+  when: instructor_config_deploy_verifier | bool
   kubernetes.core.k8s:
     state: present
     definition:
@@ -323,6 +326,7 @@
             targetPort: 8080
 
 - name: "{{ instructor.name }} — Create Verifier Route"
+  when: instructor_config_deploy_verifier | bool
   kubernetes.core.k8s:
     state: present
     definition:
@@ -343,6 +347,7 @@
           insecureEdgeTerminationPolicy: Redirect
 
 - name: "{{ instructor.name }} — Publish Verifier info"
+  when: instructor_config_deploy_verifier | bool
   agnosticd.core.agnosticd_user_info:
     msg: |
       Verifier:

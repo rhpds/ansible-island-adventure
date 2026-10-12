@@ -78,6 +78,7 @@ redis_pvc_size: 1Gi
 # -------------------------------------------------------------------
 # Verifier Configuration
 # -------------------------------------------------------------------
+instructor_config_deploy_verifier: false
 verifier_image: "quay.io/rhpds/ansible-island-verifier:latest"
 verifier_hmac_secret: ""
 
