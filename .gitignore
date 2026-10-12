@@ -16,6 +16,7 @@ www/
 deploy-output.json
 provision-fields.txt
 provision-data.yaml
+student-data.yaml
 
 # Provisioner data (contains credentials)
 job-vars.json
