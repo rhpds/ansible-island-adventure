@@ -98,38 +98,44 @@ results:
     value: ca8dfa1ec30485b5a9ee8d823ad9c62f/Red_Hat_logo.svg.png
   - id: 33
     key: theme_header
-    value: |-
-      <style>
-      #catalyst-banner {
-          width: 100%;
-          height: 340px;
-          background-image: url("/files/7c4d437d1dc2b13816fe3f71d8361708/catalyst-logo.png");
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
-          display: block;
-          margin: 0 0 -55px 0;
-          padding: 0;
-          border: 0;
-      }
-      </style>
+    value: >-
       <style id="theme-color">
       :root {--theme-color: #0f1b2d;}
       main { padding: 0; }
       .navbar{background-color: var(--theme-color) !important;}
       .jumbotron{background-color: var(--theme-color) !important;}
+      .centered-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-top: 50px;
+        background: linear-gradient(180deg, #0f1b2d 0%, #1a2940 100%);
+      }
+      .positioned-image {
+        object-position: left top;
+        width: 100%;
+        max-width: 960px;
+      }
+      .positioned-image img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 6px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+      }
       </style>
-      <script>
-      document.addEventListener("DOMContentLoaded", function () {
-          if (document.getElementById("catalyst-banner")) { return; }
-          const navbar = document.querySelector("nav");
-          if (!navbar) { return; }
-          const banner = document.createElement("div");
-          banner.id = "catalyst-banner";
-          navbar.insertAdjacentElement("afterend", banner);
-      });
-      </script>
+      <div class="centered-container">
+        <div class="positioned-image">
+          <img src="/files/7c4d437d1dc2b13816fe3f71d8361708/catalyst-logo.png" alt="Ansible Island">
+        </div>
+      </div>
   - id: 34
+    key: theme_footer
+    value: >-
+      <script>
+      if (window.location.pathname === "/") { window.location.href = "/login"; }
+      </script>
+  - id: 35
     key: theme_settings
     value: '{"challenge_window_size": "lg"}'
 meta: {}
