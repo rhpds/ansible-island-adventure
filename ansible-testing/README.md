@@ -84,7 +84,7 @@ ansible-playbook deploy.yml -e '{"instructor_users": ["user1", "user2"]}'
 | **0 — Cluster setup** | Installs AAP 2.7 operator, Dev Spaces operator, deploys shared AAP platform (Gateway + Controller), uploads subscription manifest, creates CheCluster |
 | **0 — Shared Gitea** | Deploys Gitea + PostgreSQL in the `gitea` namespace |
 | **1 — Per-instructor infra** | Creates `userN-ctfd` and `userN-lab` namespaces, RBAC, MariaDB + Redis + CTFd + Verifier, managed node pods, AAP org + instructor user |
-| **2 — Gitea config** | Creates student Gitea users, forks `ansible-challenge` repos |
+| **2 — Gitea config** | Creates student Gitea users, forks `ansible-survival-kit` repos |
 | **2 — CTFd config** | Builds per-instructor CTFd archives (challenges, flags, users), runs setup, imports via `/admin/import` |
 | **2 — AAP config** | Creates Workshop Inventory with student managed nodes, Machine Credential, student AAP users |
 | **3 — Handouts** | Outputs per-instructor URLs + credentials, publishes via `set_stats` for Showroom |

@@ -45,8 +45,8 @@ gitea_postgres_volume_size: 4Gi
 
 # Repos forked into each instructor's Gitea account
 instructor_repos:
-  - url: https://github.com/l3acon/ansible-challenge.git
-    name: ansible-challenge
+  - url: https://github.com/l3acon/ansible-survival-kit.git
+    name: ansible-survival-kit
 
 # ── Verifier Configuration ──────────────────────────────────────
 verifier_image: "quay.io/l3acon/ctf-verifier:latest"

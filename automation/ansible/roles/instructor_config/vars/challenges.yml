@@ -164,7 +164,7 @@ ctfd_challenges:
   - content: After logging into Gitea, you should see one repository listed on the right side of your dashboard.
     cost: 5
 - name: Hello World Beach
-  description: 'Go to your Dev Spaces workspace, open a terminal, and clone your `ansible-challenge` repository using git.
+  description: 'Go to your Dev Spaces workspace, open a terminal, and clone your `ansible-survival-kit` repository using git.
     Run the `hello-world.yml` playbook and enter the keyword from the output.
 
 
@@ -182,7 +182,7 @@ ctfd_challenges:
   - content: Find the repository URL from the Great Git-Away challenge and use it to clone the repository.
     cost: 2
   - content: Open a terminal in Dev Spaces. Copy the repository URL from Gitea. Run `git clone <url>` to clone it, then `cd
-      ansible-challenge` and `ansible-playbook hello-world.yml` to run the playbook.
+      ansible-survival-kit` and `ansible-playbook hello-world.yml` to run the playbook.
     cost: 10
 - name: Message in a Bottle at the Beach
   description: "Half-buried in the wet sand near the waterline, you spot the glint of green glass. It's a bottle, sealed with\
@@ -203,7 +203,7 @@ ctfd_challenges:
     cost: 5
 - name: Hello World Treasure Hunt
   description: 'It''s time to bring your work into the tower. Create a **Project** in the AAP Controller using your Gitea
-    `ansible-challenge` repository. Use the `treasurehunt` branch. Then create a **Job Template** with the `hello-world.yml`
+    `ansible-survival-kit` repository. Use the `treasurehunt` branch. Then create a **Job Template** with the `hello-world.yml`
     playbook, and launch it. Listen for the keyword it reveals.
 
 

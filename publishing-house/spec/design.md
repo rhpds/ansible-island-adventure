@@ -90,6 +90,6 @@ Intermediate
 - **Capacity:** ~140 instructors per cluster with 25% headroom; see `deploy/CAPACITY.md` for sizing details
 - **Automation approach:** Ansible (operators installed from redhat-operators; all services deployed via Ansible playbook with kubernetes.core — run by platform at provisioning time)
 - **AI/MaaS:** None
-- **External services:** registry.redhat.io (operator images), registry.access.redhat.com (RHEL VM images), github.com (ansible-challenge repo), docker.io (CTFd, MariaDB, Redis), quay.io (verifier image)
+- **External services:** registry.redhat.io (operator images), registry.access.redhat.com (RHEL VM images), github.com (ansible-survival-kit repo), docker.io (CTFd, MariaDB, Redis), quay.io (verifier image)
 - **AAP version:** 2.7 (stable-2.7 channel, AnsibleAutomationPlatform CR with Gateway)
 - **Non-GA products:** None (all products are GA)

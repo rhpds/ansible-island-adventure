@@ -51,7 +51,7 @@ onto a pre-provisioned OpenShift cluster with AAP and Dev Spaces already install
 
 After deploy, each instructor gets:
 - Their own CTFd instance with 26 challenges
-- A Gitea account with the `ansible-challenge` repo
+- A Gitea account with the `ansible-survival-kit` repo
 - An AAP organization (Org Admin)
 - Dev Spaces access
 - Personalized credentials printed to the console and published via `set_stats`

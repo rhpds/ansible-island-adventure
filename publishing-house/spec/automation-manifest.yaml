@@ -55,9 +55,9 @@ seed_data:
       loaded into each instructor's CTFd instance at deploy time.
 
   - name: gitea-repos
-    source: https://github.com/l3acon/ansible-challenge.git
+    source: https://github.com/l3acon/ansible-survival-kit.git
     description: >-
-      The ansible-challenge repository is forked into each instructor's
+      The ansible-survival-kit repository is forked into each instructor's
       Gitea account, providing playbooks and vault-encrypted files for challenges.
 
   - name: aap-configuration

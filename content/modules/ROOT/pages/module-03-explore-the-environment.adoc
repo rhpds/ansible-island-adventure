@@ -116,7 +116,7 @@ The managed node VM is provisioned separately by the student catalog item — it
 | Deploys per-instructor CTFd instances with MariaDB and Redis
 
 | `gitea`
-| Deploys shared Gitea instance and forks the `ansible-challenge` repository per instructor
+| Deploys shared Gitea instance and forks the `ansible-survival-kit` repository per instructor
 
 | `aap`
 | Configures per-instructor AAP organizations, inventories, and machine credentials

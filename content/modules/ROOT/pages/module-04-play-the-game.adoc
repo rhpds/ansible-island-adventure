@@ -112,8 +112,8 @@ These challenges introduce Ansible CLI skills.
 [source,bash,subs="attributes"]
 ----
 cd ~
-git clone https://{user}:{password}@$(echo {gitea_url} | sed 's|https://||')/{user}/ansible-challenge.git
-cd ansible-challenge
+git clone https://{user}:{password}@$(echo {gitea_url} | sed 's|https://||')/{user}/ansible-survival-kit.git
+cd ansible-survival-kit
 ----
 +
 . Run the `hello-world.yml` playbook:
@@ -127,7 +127,7 @@ ansible-playbook hello-world.yml
 
 === Message in a Bottle at the Beach
 
-. In the `ansible-challenge` repository, find the file `message-in-a-bottle.txt`.
+. In the `ansible-survival-kit` repository, find the file `message-in-a-bottle.txt`.
 . Decrypt it using Ansible Vault with the passphrase `redhat`:
 +
 [source,bash]
@@ -146,14 +146,14 @@ These challenges use the *Ansible Automation Platform Controller* to orchestrate
 
 . In the AAP Controller ({aap_url}), go to *Automation Execution → Projects*.
 . Click *Create project* and configure it:
-* *Name:* `ansible-challenge`
+* *Name:* `ansible-survival-kit`
 * *Source Control Type:* Git
 * *Source Control URL:* Your Gitea repository URL
 * *Source Control Branch:* `treasurehunt`
 . Save and wait for the project to sync successfully.
 . Go to *Automation Execution → Templates* and click *Create template → Create job template*:
 * *Name:* `Hello World`
-* *Project:* `ansible-challenge`
+* *Project:* `ansible-survival-kit`
 * *Playbook:* `hello-world.yml`
 * *Inventory:* Select an existing inventory (or create one with `localhost`)
 . Launch the job and find the keyword in the output.
@@ -168,7 +168,7 @@ These challenges use the *Ansible Automation Platform Controller* to orchestrate
 * *Vault Password:* `AAP`
 . Create a new *Job Template*:
 * *Name:* `Secret Message`
-* *Project:* `ansible-challenge`
+* *Project:* `ansible-survival-kit`
 * *Playbook:* `secret-word.yml`
 * *Credentials:* Add both the *Vault Credential* you just created and any required machine credential
 . Launch the job and find the secret message in the output.
@@ -178,7 +178,7 @@ These challenges use the *Ansible Automation Platform Controller* to orchestrate
 
 . Create a new *Job Template*:
 * *Name:* `Deploy Web Server`
-* *Project:* `ansible-challenge`
+* *Project:* `ansible-survival-kit`
 * *Playbook:* `apache/apache_role_install.yml`
 * *Inventory:* Your instructor inventory
 * *Credentials:* Add both the *Machine Credential* and the *Vault Credential*

@@ -43,8 +43,10 @@ instructor:
 # instructors: []
 
 instructor_repos:
-  - url: https://github.com/l3acon/ansible-challenge.git
-    name: ansible-challenge
+  - url: https://github.com/l3acon/ansible-survival-kit.git
+    name: ansible-survival-kit
+  - url: https://github.com/l3acon/aia-instructor.git
+    name: aia-instructor
 
 # -------------------------------------------------------------------
 # AAP Configuration

@@ -48,8 +48,8 @@ aia_gitea_postgres_image: "postgres:14-alpine"
 aia_gitea_volume_size: 4Gi
 aia_gitea_postgres_volume_size: 4Gi
 aia_instructor_repos:
-  - url: https://github.com/l3acon/ansible-challenge.git
-    name: ansible-challenge
+  - url: https://github.com/l3acon/ansible-survival-kit.git
+    name: ansible-survival-kit
 
 # ── Verifier ────────────────────────────────────────────────────
 aia_verifier_image: "quay.io/l3acon/ctf-verifier:latest"

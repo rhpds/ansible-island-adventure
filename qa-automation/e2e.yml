@@ -42,7 +42,7 @@
 
     - name: "E2E: Verify test user's Gitea repo exists"
       ansible.builtin.uri:
-        url: "https://gitea-{{ gitea_namespace }}.{{ cluster_apps_domain }}/api/v1/repos/{{ test_user }}/ansible-challenge"
+        url: "https://gitea-{{ gitea_namespace }}.{{ cluster_apps_domain }}/api/v1/repos/{{ test_user }}/ansible-survival-kit"
         validate_certs: false
         status_code: 200
         user: "{{ test_user }}"
