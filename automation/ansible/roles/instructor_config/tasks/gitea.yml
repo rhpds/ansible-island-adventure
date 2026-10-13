@@ -1,5 +1,5 @@
 ---
-# Create instructor Gitea users and fork repos.
+# Create instructor Gitea users, migrate repos, and fork them.
 
 - name: Set Gitea API base URL
   ansible.builtin.set_fact:
@@ -41,9 +41,48 @@
     status_code: [200]
 
 
-- name: Fork repos into each instructor's account
+# ── Ensure repos exist under starter account (migrate if missing) ─
+- name: Check if repos exist under starter account
   ansible.builtin.uri:
-    url: "{{ _gitea_api }}/repos/starter/{{ instructor_repos[0].name }}/forks"
+    url: "{{ _gitea_api }}/repos/starter/{{ item.name }}"
+    method: GET
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200, 404]
+  loop: "{{ instructor_repos }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _repo_checks
+
+- name: Migrate missing repos from GitHub into starter account
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/repos/migrate"
+    method: POST
+    body_format: json
+    body:
+      clone_addr: "{{ item.item.url }}"
+      repo_name: "{{ item.item.name }}"
+      repo_owner: "starter"
+      mirror: false
+      private: false
+      service: git
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [201, 409]
+  loop: "{{ _repo_checks.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.status == 404
+
+
+# ── Fork repos into instructor's account ─────────────────────────
+- name: Fork repos into instructor's account
+  ansible.builtin.uri:
+    url: "{{ _gitea_api }}/repos/starter/{{ item.name }}/forks"
     method: POST
     body_format: json
     body: {}
@@ -54,6 +93,9 @@
     headers:
       Sudo: "{{ instructor.name }}"
     status_code: [202, 409]
+  loop: "{{ instructor_repos }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 
 - name: "{{ instructor.name }} — Publish Gitea info"
