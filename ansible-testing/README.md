@@ -1,5 +1,8 @@
 # Ansible Island Adventure — CNV Deployer
 
+This documents the legacy local deployer. For the current two-CI deployment flow
+and SSO-enabled ordering CLI, see the [root README](../README.md#quick-start).
+
 Deploys the full Ansible Island Adventure CTF environment on a shared
 OpenShift CNV cluster provisioned from RHDP.
 

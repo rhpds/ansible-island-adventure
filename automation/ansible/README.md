@@ -4,17 +4,25 @@ This collection contains automation for deploying and configuring the Ansible Is
 
 ## Roles
 
-The primary automation lives in `ansible-testing/` and `collections/ansible_collections/rhpds/aia/` in the project root. This `automation/ansible/` directory is the publishing-house scaffolded placeholder.
+Catalog workload roles live in this directory:
 
-For the actual deployment automation, see:
+- `roles/instructor_config/` — Instructor services and configuration, including CTFd, Gitea, AAP, and Keycloak integration
+- `roles/keycloak_ocp_logout_fix/` — Keycloak/OpenShift logout configuration
 
-- `ansible-testing/deploy.yml` — Main deployment playbook
-- `ansible-testing/roles/` — Deployment roles (cluster_setup, instructor, configure_ctfd, configure_gitea, configure_aap, shared_gitea)
-- `collections/ansible_collections/rhpds/aia/` — Refactored collection with deploy_leaderboard and deploy_vms roles
+The project root also retains `ansible-testing/` playbooks and the
+`collections/ansible_collections/rhpds/aia/` collection for local role development.
+The collection's `deploy_vms` role is currently a stub.
 
 ## Usage
 
-The deployment is triggered automatically by RHDP during environment provisioning. For manual runs:
+Order the leaderboard CI first, wait for deployment, then order the student CI
+using the leaderboard's five provision fields. Workload deployment runs through
+RHDP provisioning. See the [root README](../../README.md#quick-start) for manual
+ordering and the SSO-enabled `utils/dev-environment.py` CLI, which reuses the
+leaderboard for subsequent student deployments.
+
+For legacy local playbook development, the following commands remain available;
+they require the older `.cnv.env` layout and local Ansible dependencies:
 
 ```bash
 cd ansible-testing

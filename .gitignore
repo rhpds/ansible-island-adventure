@@ -24,3 +24,8 @@ job_*.txt
 ansible-error.txt
 utils/.leaderboard.yaml
 utils/.student.yaml
+
+# Catalog session, order payloads, and ResourceClaim exports (contain credentials)
+.aia-dev/
+__pycache__/
+.venv/
