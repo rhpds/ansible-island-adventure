@@ -98,20 +98,39 @@
       - "{{ instructor.ctfd_ns }}"
       - --
       - python3
+      - -u
       - -c
       - |
         from CTFd import create_app
         app = create_app()
         with app.app_context():
             from CTFd.models import Challenges
-            print(Challenges.query.count())
+            print("CHALLENGE_COUNT:" + str(Challenges.query.count()))
   register: _existing_challenges
-  failed_when: false
+  # Bound the entire oc process, including API connection and CTFd startup.
+  async: "{{ ctfd_challenge_check_timeout }}"
+  poll: 5
+  changed_when: false
+  # CTFd may print startup messages. Accept exactly one explicit count, and
+  # preserve command failures (including stderr) instead of assuming zero.
+  failed_when: >-
+    (_existing_challenges.rc | default(1)) != 0 or
+    (_existing_challenges.stdout | default('') |
+     regex_findall('(?m)^CHALLENGE_COUNT:([0-9]+)$') | length) != 1
+  until: _existing_challenges is succeeded
+  retries: "{{ ctfd_challenge_check_retries }}"
+  delay: "{{ ctfd_challenge_check_delay }}"
   environment:
     PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
 
+- name: "{{ instructor.name }} — Record existing challenge count"
+  ansible.builtin.set_fact:
+    _existing_challenge_count: >-
+      {{ _existing_challenges.stdout |
+         regex_findall('(?m)^CHALLENGE_COUNT:([0-9]+)$') | first | int }}
+
 - name: "{{ instructor.name }} — Setup, login, and import CTFd archive"
-  when: (_existing_challenges.stdout_lines | default(['0']) | last | trim | int) == 0
+  when: _existing_challenge_count == 0
   ansible.builtin.shell: |
     set -eo pipefail
     URL="{{ _ctfd_base_url }}"

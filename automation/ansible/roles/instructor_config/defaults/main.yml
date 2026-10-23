@@ -64,6 +64,11 @@ ctfd_admin_email: admin@example.com
 ctfd_logs_pvc_size: 1Gi
 ctfd_uploads_pvc_size: 1Gi
 
+# Bound each oc exec attempt; retries are in addition to the initial attempt.
+ctfd_challenge_check_timeout: 120
+ctfd_challenge_check_retries: 2
+ctfd_challenge_check_delay: 10
+
 ctfd_challenges: []
 ctfd_challenges_advanced: []
 

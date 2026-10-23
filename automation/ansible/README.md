@@ -21,6 +21,20 @@ RHDP provisioning. See the [root README](../../README.md#quick-start) for manual
 ordering and the SSO-enabled `utils/dev-environment.py` CLI, which reuses the
 leaderboard for subsequent student deployments.
 
+The CTFd challenge-count check allows 120 seconds per attempt and two retries,
+with a 10-second delay between attempts. Override
+`ctfd_challenge_check_timeout`, `ctfd_challenge_check_retries`, and
+`ctfd_challenge_check_delay` when needed. Failed commands and missing or malformed
+counts stop provisioning before archive import; their command diagnostics are
+retained in the Ansible output.
+
+Run the offline challenge-check regression tests with `ansible-playbook` and
+PyYAML installed:
+
+```bash
+python3 -m unittest discover -s automation/ansible/tests -v
+```
+
 For legacy local playbook development, the following commands remain available;
 they require the older `.cnv.env` layout and local Ansible dependencies:
 
