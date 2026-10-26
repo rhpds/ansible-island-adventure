@@ -64,7 +64,14 @@ ctfd_admin_email: admin@example.com
 ctfd_logs_pvc_size: 1Gi
 ctfd_uploads_pvc_size: 1Gi
 
-# Bound each oc exec attempt; retries are in addition to the initial attempt.
+# Catalog bootstrap initializes settings/accounts without loading challenges.
+ctfd_bootstrap_timeout: 120
+ctfd_bootstrap_retries: 2
+ctfd_bootstrap_delay: 10
+
+# Used only by the explicit post-deployment content playbook.
+# Bound each oc exec attempt with GNU timeout (plus 5s before forced kill).
+# Retries are in addition to the initial attempt.
 ctfd_challenge_check_timeout: 120
 ctfd_challenge_check_retries: 2
 ctfd_challenge_check_delay: 10

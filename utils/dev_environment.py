@@ -147,7 +147,8 @@ def resolve_parameters(item, fields, activity, purpose, groups):
 
 
 def build_claim(item, session, namespace, name, run_id, server, fields=None,
-                activity="Asset Development", purpose="Developing a community demo", lifespan=None):
+                activity="Asset Development", purpose="Developing a community demo", lifespan=None,
+                keep_on_failure=False):
     spec, metadata = item["spec"], item["metadata"]
     if spec.get("externalUrl"):
         raise ValueError("External catalog items cannot be ordered as ResourceClaims")
@@ -206,7 +207,8 @@ def build_claim(item, session, namespace, name, run_id, server, fields=None,
     return {"apiVersion": "poolboy.gpte.redhat.com/v1", "kind": "ResourceClaim",
             "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations},
             "spec": {"provider": {"name": metadata["name"], "parameterValues": parameters},
-                     "lifespan": {"end": timestamp(end)}, "autoDetach": {"when": AUTO_DETACH_WHEN}}}
+                     "lifespan": {"end": timestamp(end)},
+                     **({} if keep_on_failure else {"autoDetach": {"when": AUTO_DETACH_WHEN}})}}
 
 
 def validate_claim_identity(order, claim, run_id=None):
@@ -273,7 +275,8 @@ class Deployment:
         name = f"aia-{role}-{self.run['id']}"
         namespace = self.run["namespace"]
         body = build_claim(item, self.client.session, namespace, name, self.run["id"], self.client.server,
-                           fields, self.run["activity"], self.run["purpose"], self.run.get("lifespan"))
+                           fields, self.run["activity"], self.run["purpose"], self.run.get("lifespan"),
+                           keep_on_failure=self.run.get("keep_on_failure", False))
         request_path = self.path.with_name(self.run["id"] + f"-{role}.request.json")
         secure_write(request_path, body)
         self.run["orders"][role] = {
@@ -303,14 +306,7 @@ class Deployment:
             body = read_json(request_path)
             self.validate_identity(order, body)
             if role == "student":
-                source = self.run.get("student_source")
-                if source is None:
-                    source = resolve_student_source(self.client.catalog(order["catalog"]), self.directory)
-                verified = check_content_source(source)
-                if source.get("commit") and verified["commit"] != source["commit"]:
-                    raise CatalogError("Showroom ref moved since preflight. Start a new run to select the new content commit")
-                self.run["student_source"] = verified
-                self.save()
+                self.verify_student_source()
             end = body["spec"]["lifespan"]["end"]
             if datetime.fromisoformat(end.replace("Z", "+00:00")) <= utcnow():
                 raise CatalogError("Prepared order has expired; start a new run")
@@ -327,6 +323,16 @@ class Deployment:
         order["submitted"] = True
         self.save()
         return claim
+
+    def verify_student_source(self):
+        source = self.run.get("student_source")
+        if source is None:
+            source = resolve_student_source(self.client.catalog(self.run["catalogs"]["student"]), self.directory)
+        verified = check_content_source(source)
+        if source.get("commit") and verified["commit"] != source["commit"]:
+            raise CatalogError("Showroom ref moved since preflight. Start a new run to select the new content commit")
+        self.run["student_source"] = verified
+        self.save()
 
     def wait(self, role):
         order = self.run["orders"][role]
@@ -368,6 +374,10 @@ class Deployment:
         fields = student_fields(leaderboard)
         # Save only the identity for reuse; credentials are refreshed from the API.
         remember_leaderboard(self.client, self.directory, leaderboard, self.run["catalogs"]["leaderboard"])
+        if self.run.get("workshop"):
+            from student_workshop import deploy_workshop
+            deploy_workshop(self, fields)
+            return
         self.prepare("student", fields)
         # A stopped/retired leaderboard must not be reused on a resumed student order.
         if not claim_state(self.client.claim(self.run["orders"]["leaderboard"]["namespace"],
@@ -455,6 +465,9 @@ def parser():
         sub.add_argument("--purpose", default="Developing a community demo")
         sub.add_argument("--lifespan", help="Catalog lifespan override, e.g. 2d")
         sub.add_argument("--expected-student-version", help="Require this live CatalogItem resourceVersion")
+        sub.add_argument("--workshop", action="store_true", help="Order student CIs through the workshop interface")
+        sub.add_argument("--workshop-user-count", type=int, help="Independent student CIs in a workshop (default: 2)")
+        sub.add_argument("--keep-on-failure", action="store_true", help="Keep infrastructure attached if provisioning fails")
         sub.add_argument("--accept-warnings", action="store_true", required=True,
                          help="Acknowledge the catalog warnings shown by inspect, equivalent to its checkbox")
         sub.add_argument("--skip-checks", action="store_true", help="Skip service reachability checks after deployment")
@@ -504,6 +517,7 @@ def new_run(args, client):
            "namespace": namespace, "catalogs": catalogs, "activity": args.activity, "purpose": args.purpose,
            "lifespan": args.lifespan, "expected_student_version": args.expected_student_version,
            "warnings_acknowledged": True, "skip_checks": args.skip_checks, "created": timestamp(utcnow()),
+           "keep_on_failure": args.keep_on_failure,
            "local_code": code_revision(), "orders": {}, "phase": "provisioning"}
     selected = None
     if args.leaderboard_file:
@@ -527,6 +541,13 @@ def new_run(args, client):
         raise CatalogError("No leaderboard selected. Use bootstrap, --leaderboard, or --leaderboard-file")
     item = client.catalog(catalogs["student"])
     student_parameter_names(item)
+    if args.workshop_user_count is not None and not args.workshop:
+        raise ValueError("--workshop-user-count requires --workshop")
+    if args.workshop:
+        from student_workshop import validate_workshop_catalog
+        count = args.workshop_user_count if args.workshop_user_count is not None else 2
+        validate_workshop_catalog(item, count)
+        run["workshop"] = {"user_count": count}
     run["student_source"] = check_content_source(resolve_student_source(item, directory))
     deployment = Deployment(client, directory, run, args.poll, args.timeout)
     deployment.save()
@@ -606,6 +627,8 @@ def main(argv=None):
                                         getattr(args, "retry_submit", False))
                 if args.command == "status":
                     print(f"Run: {run['id']} ({run['phase']}); checks: {run.get('checks', 'pending')}")
+                    if run.get("workshop", {}).get("url"):
+                        print("Workshop: " + run["workshop"]["url"])
                     for role, order in run["orders"].items():
                         claim = client.claim(order["namespace"], order["name"])
                         deployment.validate_identity(order, claim)

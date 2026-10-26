@@ -22,6 +22,8 @@ student-data.yaml
 job-vars.json
 job_*.txt
 ansible-error.txt
+provision-error.txt
+student-failed.yaml
 utils/.leaderboard.yaml
 utils/.student.yaml
 

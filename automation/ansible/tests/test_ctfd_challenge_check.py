@@ -1,7 +1,7 @@
 """Offline Ansible regression tests; no cluster or credentials are used.
 
 Run with: python3 -m unittest discover -s automation/ansible/tests -v
-Requires ansible-playbook and PyYAML.
+Requires ansible-playbook, GNU coreutils timeout, and PyYAML.
 """
 
 import json
@@ -21,7 +21,7 @@ ROLE = COLLECTION / "roles" / "instructor_config"
 
 @unittest.skipUnless(shutil.which("ansible-playbook"), "ansible-playbook required")
 class ChallengeCheckTests(unittest.TestCase):
-    def run_check(self, responses, timeout=10, retries=0):
+    def run_check(self, responses, timeout=10, retries=0, split_home=False):
         tasks = yaml.safe_load((ROLE / "tasks/ctfd_config.yml").read_text())
         check = next(t for t in tasks if t["name"].endswith("Check if challenges already loaded"))
         record = next(t for t in tasks if t["name"].endswith("Record existing challenge count"))
@@ -72,6 +72,14 @@ sys.exit(response.get('rc', 0))
                        ANSIBLE_LOCAL_TEMP=str(root / "local-tmp"),
                        ANSIBLE_REMOTE_TEMP=str(root / "remote-tmp"),
                        ANSIBLE_ASYNC_DIR=str(root / "async"), ANSIBLE_NOCOLOR="1")
+            if split_home:
+                # The async writer inherits task HOME, while the poller expands
+                # ~ using the connection's HOME. Exercise that runner mismatch.
+                task_home = root / "task-home"
+                task_home.mkdir()
+                env["ANSIBLE_ASYNC_DIR"] = "~/.ansible_async"
+                play[0]["environment"] = {"HOME": str(task_home)}
+                playbook.write_text(yaml.safe_dump(play, sort_keys=False))
             result = subprocess.run(
                 ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)],
                 env=env, text=True, capture_output=True, timeout=60,
@@ -91,6 +99,14 @@ sys.exit(response.get('rc', 0))
         rc, output, _ = self.run_check([{"stdout": "CHALLENGE_COUNT:25\n"}])
         self.assertEqual(rc, 0, output)
         self.assertNotIn("IMPORT_ALLOWED", output)
+
+    def test_task_home_differs_from_controller_home(self):
+        rc, output, attempts = self.run_check([
+            {"stdout": "CHALLENGE_COUNT:0\n"},
+        ], split_home=True)
+        self.assertEqual(rc, 0, output)
+        self.assertIn("IMPORT_ALLOWED", output)
+        self.assertEqual(attempts, 1)
 
     def test_invalid_counts_stop_before_import(self):
         for stdout in ("", "startup only\n", "CHALLENGE_COUNT:no\n",
@@ -124,7 +140,8 @@ sys.exit(response.get('rc', 0))
             {"stdout": "CHALLENGE_COUNT:0\n", "sleep": 30},
         ], timeout=1, retries=1)
         self.assertNotEqual(rc, 0, output)
-        self.assertRegex(output, "Timeout exceeded|async task did not complete within the requested time")
+        self.assertIn("sending signal TERM", output)
+        self.assertIn('"rc": 124', output)
         self.assertEqual(attempts, 2)
         self.assertNotIn("TASK [Import boundary]", output)
 

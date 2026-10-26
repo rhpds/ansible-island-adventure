@@ -1,5 +1,15 @@
 ---
-# Build CTFd import archive and upload to each instructor's CTFd instance.
+# Explicit post-deployment content loading; not part of catalog provisioning.
+- name: Load challenge definitions (if not already provided)
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/vars/challenges.yml"
+  when: ctfd_challenges | length == 0
+
+- name: "{{ instructor.name }} — Wait for CTFd service"
+  ansible.builtin.include_tasks: ctfd_ready.yml
+
+- name: "{{ instructor.name }} — Initialize CTFd settings and accounts"
+  ansible.builtin.include_tasks: ctfd_users.yml
 
 - name: Merge challenge lists
   ansible.builtin.set_fact:
@@ -12,10 +22,6 @@
   loop: "{{ _all_challenges }}"
   loop_control:
     index_var: idx
-
-- name: "{{ instructor.name }} — Set CTFd base URL"
-  ansible.builtin.set_fact:
-    _ctfd_base_url: "https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}"
 
 # ── Build archive directory ──────────────────────────────────────
 - name: "{{ instructor.name }} — Create archive temp directory"
@@ -77,20 +83,15 @@
     format: zip
 
 # ── Upload to CTFd ───────────────────────────────────────────────
-- name: "{{ instructor.name }} — Wait for CTFd to be healthy"
-  ansible.builtin.uri:
-    url: "{{ _ctfd_base_url }}/healthcheck"
-    method: GET
-    validate_certs: false
-    status_code: [200]
-  register: _ctfd_health
-  until: _ctfd_health.status | default(0) == 200
-  retries: 30
-  delay: 10
-
 - name: "{{ instructor.name }} — Check if challenges already loaded"
   ansible.builtin.command:
     argv:
+      # Keep the deadline independent of Ansible's async job cache, whose
+      # launch/poll paths can differ inside provisioning execution environments.
+      - timeout
+      - --verbose
+      - --kill-after=5s
+      - "{{ ctfd_challenge_check_timeout }}s"
       - oc
       - exec
       - deploy/ctfd
@@ -107,9 +108,6 @@
             from CTFd.models import Challenges
             print("CHALLENGE_COUNT:" + str(Challenges.query.count()))
   register: _existing_challenges
-  # Bound the entire oc process, including API connection and CTFd startup.
-  async: "{{ ctfd_challenge_check_timeout }}"
-  poll: 5
   changed_when: false
   # CTFd may print startup messages. Accept exactly one explicit count, and
   # preserve command failures (including stderr) instead of assuming zero.
@@ -202,77 +200,9 @@
     'ERROR' in (_ctfd_import.stdout | default(''))
   no_log: false
 
-- name: "{{ instructor.name }} — Wait for CTFd deployment to be ready"
-  kubernetes.core.k8s_info:
-    api_version: apps/v1
-    kind: Deployment
-    name: ctfd
-    namespace: "{{ instructor.ctfd_ns }}"
-  register: _ctfd_deploy
-  until: >-
-    (_ctfd_deploy.resources | length > 0) and
-    (_ctfd_deploy.resources[0].status.readyReplicas | default(0)) >= 1
-  retries: 30
-  delay: 10
-  environment:
-    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
-
 # ── Create instructor user via CTFd internals (no passlib needed) ─
-- name: "{{ instructor.name }} — Create/update CTFd users (instructor + student)"
-  ansible.builtin.command:
-    argv:
-      - oc
-      - exec
-      - deploy/ctfd
-      - -n
-      - "{{ instructor.ctfd_ns }}"
-      - --
-      - python3
-      - -c
-      - |
-        from CTFd import create_app
-        app = create_app()
-        with app.app_context():
-            from CTFd.models import db
-            from CTFd.utils.crypto import hash_password, verify_password
-            from sqlalchemy import text
-            results = []
-            for uname, upass, uemail, utype in [
-                ("{{ ctfd_admin_username }}", "{{ common_password }}", "{{ ctfd_admin_email }}", "admin"),
-                ("{{ student_name }}", "{{ common_password }}", "{{ student_name }}@island.local", "user"),
-            ]:
-                exists = db.session.execute(
-                    text("SELECT id FROM users WHERE name = :n"), {"n": uname}
-                ).scalar()
-                h = hash_password(upass)
-                if exists:
-                    db.session.execute(
-                        text("UPDATE users SET password = :p WHERE name = :n"),
-                        {"p": h, "n": uname},
-                    )
-                    results.append(f"UPDATED:{uname}")
-                else:
-                    db.session.execute(
-                        text("INSERT INTO users (name, email, password, type, hidden, banned, verified) "
-                             "VALUES (:n, :e, :p, :t, :h, 0, 0)"),
-                        {"n": uname, "e": uemail, "p": h, "t": utype,
-                         "h": 1 if utype == "admin" else 0},
-                    )
-                    results.append(f"CREATED:{uname}")
-                db.session.commit()
-                ok = verify_password(upass, db.session.execute(
-                    text("SELECT password FROM users WHERE name = :n"), {"n": uname}
-                ).scalar())
-                results.append(f"  verify={ok}")
-            for r in results:
-                print(r)
-  register: _ctfd_user
-  changed_when: "'CREATED' in (_ctfd_user.stdout | default(''))"
-  retries: 3
-  delay: 20
-  until: _ctfd_user.rc == 0
-  environment:
-    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+- name: "{{ instructor.name }} — Restore CTFd account passwords after archive import"
+  ansible.builtin.include_tasks: ctfd_users.yml
 
 - name: "{{ instructor.name }} — Verify challenges in database"
   ansible.builtin.command:
@@ -318,17 +248,3 @@
   ansible.builtin.file:
     path: "{{ _archive_dir.path }}"
     state: absent
-
-- name: "{{ instructor.name }} — Publish CTFd info"
-  agnosticd.core.agnosticd_user_info:
-    msg: |
-      CTFd (Ansible Island CTF Platform):
-        URL:          https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}
-        Admin:        {{ ctfd_admin_username }} / {{ common_password }}
-        Student:      {{ student_name }} / {{ common_password }}
-    data:
-      ctfd_url: "https://island-{{ instructor.ctfd_ns }}.{{ cluster_apps_domain }}"
-      ctfd_admin_username: "{{ ctfd_admin_username }}"
-      ctfd_admin_password: "{{ common_password }}"
-      ctfd_student_username: "{{ student_name }}"
-      ctfd_student_password: "{{ common_password }}"

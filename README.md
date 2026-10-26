@@ -43,6 +43,11 @@ Deployment requires **two catalog items (CIs), ordered in sequence**:
    Use the same activity, purpose, and warning acknowledgement. Copy the five
    extracted values into the corresponding fields below, then click **Order**.
 4. Wait for the student deployment to finish before beginning development.
+5. Load event challenges with your post-deployment Ansible playbook. Catalog
+   provisioning initializes CTFd service access and accounts; it leaves a new
+   instance's challenge board empty. A standalone content loader is available at
+   [`automation/ansible/configure_ctfd.yml`](automation/ansible/configure_ctfd.yml);
+   see the [collection README](automation/ansible/README.md) for inputs and usage.
 
 | Leaderboard provision-data key | Student form field / variable |
 |-------------------------------|-------------------------------|
@@ -162,6 +167,30 @@ student CI configuration or workload automation. Verified source refs do not
 prove which workload automation commit was deployed. To require an observed catalog version,
 pass `--expected-student-version <resourceVersion>` from `inspect`.
 
+To deploy independent student CIs through the workshop interface:
+
+```bash
+python utils/dev-environment.py new-student --workshop --workshop-user-count 2 \
+  --keep-on-failure --accept-warnings
+```
+
+This creates a Babylon Workshop and WorkshopProvision using the catalog display
+name, a generated eight-character access password, open registration, and an
+empty description. The user count is the number of separate student CIs, all
+using the saved leaderboard. Provision concurrency and start interval use the
+form defaults of 10 and 30 seconds. Workshop ordering currently supports catalog
+items with `workshopUserMode: none`; count limits and disabled interfaces are
+checked before ordering.
+
+`--keep-on-failure` selects **Keep instance if provision fails** by omitting the
+auto-detach rule, so failed infrastructure remains available for inspection.
+It also works for standalone orders. Auto-Stop and Auto-Destroy still apply.
+Workshop passwords and exact requests are stored only in private `.aia-dev/`
+files. `resume` recovers the same Workshop/WorkshopProvision after interruption,
+then waits for and checks each student CI. `status` prints the workshop and
+individual service links. The utility does not request replacement orders for
+failed children; the workshop controller can apply its normal replacement policy.
+
 To save a leaderboard that was ordered successfully in the browser without
 ordering anything else:
 
@@ -202,7 +231,8 @@ still displays **Waiting to Provision**. The latest ResourceClaim is saved
 privately alongside the run for diagnosis. Activity and explanation are form
 metadata stored in annotations; they are only sent as provider inputs if the
 catalog explicitly declares them. Orders also follow the catalog's default
-Auto-Stop runtime and the browser's failed-provisioning detachment behavior.
+Auto-Stop runtime and, unless `--keep-on-failure` is selected, the browser's
+failed-provisioning detachment behavior.
 
 After deployment, reachability checks use the student's published `ctfd_url`,
 `gitea_url`, and `aap_url` with TLS verification and without catalog credentials.
