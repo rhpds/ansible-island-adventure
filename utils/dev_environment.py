@@ -439,6 +439,8 @@ def parser():
     login.add_argument("--no-browser", action="store_true", help="Print the SSO URL without opening it")
     login.add_argument("--timeout", type=float, default=300)
     commands.add_parser("whoami", help="Verify SSO and API access without ordering")
+    export = commands.add_parser("export-students", help="Export private post-deployment Ansible inventory; places no orders")
+    export.add_argument("--run", help="Run ID; defaults to the latest run")
     select = commands.add_parser("use-leaderboard", help="Save a healthy existing leaderboard for reuse; places no orders")
     select.add_argument("leaderboard", help="Existing claim name or namespace/name")
     select.add_argument("--leaderboard-catalog", default=LEADERBOARD)
@@ -595,6 +597,21 @@ def main(argv=None):
                 print("Catalog warnings:\n" + str(item["spec"].get("termsOfService") or "None published"))
             return 0
         with state_lock(args.state_dir):
+            if args.command == "export-students":
+                from student_inventory import inventory_from_claims
+                run = load_run(args.state_dir, args.run)
+                if run["server"] != client.server or run["user"] != client.session["user"]:
+                    raise CatalogError("Run belongs to a different server or account")
+                if run["phase"] not in ("deployed", "complete"):
+                    raise CatalogError("Run must be deployed before exporting student inventory")
+                claims = {role: client.claim(order["namespace"], order["name"])
+                          for role, order in run["orders"].items()}
+                path = args.state_dir / "runs" / (run["id"] + ".students.inventory.json")
+                inventory = inventory_from_claims(run, claims, path.with_suffix(".kubeconfig"))
+                secure_write(path, inventory)
+                print(f"Exported private student inventory: {path}")
+                print("No catalog orders or service changes made.")
+                return 0
             if args.command in ("check-student", "publish-content"):
                 source = resolve_student_source(client.catalog(args.student_catalog), args.state_dir)
                 if args.command == "publish-content":

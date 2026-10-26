@@ -41,7 +41,7 @@ ansible-playbook configure_ctfd.yml \
 ```
 
 Install `ansible-core`, the `kubernetes.core` and `community.general`
-collections, Python `kubernetes` and `PyYAML`, and GNU coreutils `timeout` on
+collections, Python `kubernetes`, `requests`, and `PyYAML`, and GNU coreutils `timeout` on
 the control host. The playbook prepares `oc` using the role's existing CLI
 installation/login tasks; the automatic installation requires sudo if `oc`
 is missing. The interpreter override selects your local Python instead of
@@ -79,6 +79,67 @@ instead of Ansible async polling. This avoids missing async result files when
 the launch and polling processes resolve their job directories differently.
 On timeout, it preserves partial output and reports the termination on stderr;
 commands that ignore termination are killed after another five seconds.
+
+## Configure deployed students
+
+`post_deploy.yml` connects each already deployed student CI's CTFd instance and
+Gitea account. It uses the real definitions in
+[`ansible-testing/vars/challenges.yml`](../../ansible-testing/vars/challenges.yml)
+and vault-encrypted answers in
+[`ansible-testing/vars/flags.yml`](../../ansible-testing/vars/flags.yml).
+The flags were aligned with the instructor toolkit at
+[`6009a82`](https://github.com/l3acon/aia-instructor/tree/6009a828f76f4346a1d6b3c03ccdd3131ab0d278),
+including corrected YAML quoting of regex answers and keys matched by challenge
+name. The repository-name and main-branch Hello World answers were also corrected
+to match the current student Gitea content. The vault password is supplied
+separately; `.vault-password` is gitignored.
+
+From the repository root, using the development virtual environment:
+
+```bash
+.venv/bin/python -m pip install kubernetes
+ansible-galaxy collection install -p ~/.ansible/collections kubernetes.core community.general
+.venv/bin/python utils/dev-environment.py export-students --run <run-id>
+
+cd automation/ansible
+ansible-playbook -i ../../.aia-dev/runs/<run-id>.students.inventory.json \
+  post_deploy.yml --vault-password-file ../../.vault-password
+```
+
+The exporter refreshes saved claim identities from the catalog, requires the
+leaderboard and every student to be started and healthy, and validates the GUID,
+CTFd URL, and Gitea owner before writing an inventory with mode `0600` under
+`.aia-dev/`. It exports the actual published credentials, including different
+CTFd and Gitea usernames, and records the Python interpreter used for export.
+It places no orders. The generated kubeconfig is also kept under `.aia-dev/`.
+
+All students' event flags are resolved and checked before service changes.
+Use `--tags preflight` to run just this validation. Override
+`aia_event_flags_file` with an absolute path for a different event vault.
+The default load includes 25 base challenges. Set `aia_enable_advanced=true`
+only after deploying a verifier and supplying a valid `aia_student.verifier_url`;
+the provisioned placeholder URL is not a verifier integration.
+
+For each student, the playbook authenticates as their existing Gitea user,
+checks or repairs missing forks, and verifies `main` and `treasurehunt` on
+`ansible-survival-kit` plus `main` on `aia-instructor`. It creates or updates
+only `aia-instructor/ISLAND_ACCESS.md`, with service links and account names.
+Existing learner work is preserved. No passwords or answers are written to
+Gitea. An unchanged guide produces no Git commit on rerun.
+
+The playbook adds the student's repository link to relevant CTFd challenge
+descriptions and invokes the retained empty-board content loader. It then
+reconciles flag values through CTFd's API, patching existing flag IDs only when
+values differ. The flag step plans all changes first and rejects missing or
+ambiguous challenges and unexpected flag counts. It does not delete objects.
+Use `--tags flags` for a flag-only update; preflight still runs. Populated
+boards are preserved, including submissions and scores. Existing challenge
+descriptions, points, hints, and prerequisites are not updated in place by this
+entry point. It keeps the existing
+`lab-user` CTFd account and `instructor-<guid>` Gitea account, and presents their
+mapping in the access guide. It does not create AAP projects, job templates,
+inventories, or credentials. Those resources remain separate from this CTFd/
+Gitea configuration step.
 
 Run the offline CTFd regression tests with `ansible-playbook`, GNU coreutils
 `timeout`, PyYAML, and Jinja2 installed:

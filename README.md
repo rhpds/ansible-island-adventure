@@ -43,11 +43,12 @@ Deployment requires **two catalog items (CIs), ordered in sequence**:
    Use the same activity, purpose, and warning acknowledgement. Copy the five
    extracted values into the corresponding fields below, then click **Order**.
 4. Wait for the student deployment to finish before beginning development.
-5. Load event challenges with your post-deployment Ansible playbook. Catalog
+5. Configure the students with the [post-deployment playbook](automation/ansible/post_deploy.yml). Catalog
    provisioning initializes CTFd service access and accounts; it leaves a new
-   instance's challenge board empty. A standalone content loader is available at
-   [`automation/ansible/configure_ctfd.yml`](automation/ansible/configure_ctfd.yml);
-   see the [collection README](automation/ansible/README.md) for inputs and usage.
+   instance's challenge board empty. The playbook connects each student's existing
+   Gitea repositories and CTFd board, loads real vault-encrypted flags, and adds an
+   access guide to their instructor repository. See the
+   [collection README](automation/ansible/README.md) for inputs and usage.
 
 | Leaderboard provision-data key | Student form field / variable |
 |-------------------------------|-------------------------------|

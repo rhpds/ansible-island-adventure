@@ -1,0 +1,7 @@
+---
+aia_validate_certs: true
+aia_student_repositories:
+  - name: ansible-survival-kit
+    branches: [main, treasurehunt]
+  - name: aia-instructor
+    branches: [main]

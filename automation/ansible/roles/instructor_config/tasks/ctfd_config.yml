@@ -22,6 +22,7 @@
   loop: "{{ _all_challenges }}"
   loop_control:
     index_var: idx
+  no_log: true
 
 # ── Build archive directory ──────────────────────────────────────
 - name: "{{ instructor.name }} — Create archive temp directory"
@@ -198,7 +199,7 @@
   failed_when: >-
     _ctfd_import.rc != 0 or
     'ERROR' in (_ctfd_import.stdout | default(''))
-  no_log: false
+  no_log: true
 
 # ── Create instructor user via CTFd internals (no passlib needed) ─
 - name: "{{ instructor.name }} — Restore CTFd account passwords after archive import"
