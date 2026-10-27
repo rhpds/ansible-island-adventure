@@ -9,7 +9,7 @@ In this section you will tour the running architecture and verify that all servi
 === Log into the OpenShift Console
 
 . Open the OpenShift Console: {ocp_console_url}
-. Log in with your credentials: `{user}` / `{password}`
+. Log in with your instructor credentials: `{keycloak_username}` / `{password}`
 . After login, you should see the OpenShift web console dashboard.
 
 === Identify Running Services
@@ -21,15 +21,15 @@ From the OpenShift console, navigate to *Workloads → Pods* and explore the fol
 | Service | Namespace | Purpose
 
 | *CTFd*
-| `{user}-ctfd`
+| `{keycloak_username}-ctfd`
 | Your personal CTF scoring platform instance
 
 | *MariaDB*
-| `{user}-ctfd`
+| `{keycloak_username}-ctfd`
 | Database backend for CTFd
 
 | *Redis*
-| `{user}-ctfd`
+| `{keycloak_username}-ctfd`
 | Cache layer for CTFd
 
 | *Gitea*
@@ -38,7 +38,7 @@ From the OpenShift console, navigate to *Workloads → Pods* and explore the fol
 
 | *AAP Controller*
 | Shared AAP namespace
-| Ansible Automation Platform — your organization is `{user}`
+| Ansible Automation Platform — your organization is `{aap_username}`
 
 | *Dev Spaces*
 | `openshift-devspaces`
@@ -64,10 +64,7 @@ Open each service URL in your browser and confirm you can log in:
 | OpenShift Console | {ocp_console_url}
 |===
 
-[TIP]
-====
-Use the same credentials (`{user}` / `{password}`) for all services.
-====
+include::partial$service-access.adoc[]
 
 == Deployment Artifacts Walkthrough
 

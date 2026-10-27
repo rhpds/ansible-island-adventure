@@ -36,7 +36,7 @@ This lab takes approximately *2 hours* to complete:
 
 == Your Environment
 
-Your lab environment includes the following services, all pre-deployed on a shared OpenShift cluster:
+Your lab environment includes a dedicated CTFd instance and access to the following shared services:
 
 [cols="1,2",options="header"]
 |===
@@ -49,12 +49,7 @@ Your lab environment includes the following services, all pre-deployed on a shar
 | Dev Spaces (IDE) | {devspaces_url}
 |===
 
-*Login credentials:* `{user}` / `{password}`
-
-[NOTE]
-====
-Use the same username and password for all services.
-====
+include::partial$service-access.adoc[]
 
 == Prerequisites
 

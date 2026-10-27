@@ -9,10 +9,9 @@ In a customer event, participants receive a printed or digital handout containin
 * Shortened URLs for CTFd, Gitea, AAP, and Dev Spaces
 * A brief overview of the challenge categories
 
-For this lab, your credentials are:
+For this lab, use the following accounts:
 
-* *Username:* `{user}`
-* *Password:* `{password}`
+include::partial$service-access.adoc[]
 
 Your service URLs:
 
@@ -29,8 +28,10 @@ Your service URLs:
 === Log into CTFd
 
 . Open your CTFd instance: {ctfd_url}
-. Click *Register* or *Login* with your credentials.
+. Click *Login* and sign in as `{ctfd_student_username}` with your provisioned lab password.
 . You should see the challenge board with categories listed.
+
+Use `{ctfd_admin_username}` when you need to manage your CTFd instance as the facilitator.
 
 == Warm Up Challenges
 
@@ -84,7 +85,7 @@ ansible --version
 === The High Tower Signal Strength
 
 . Open the *AAP Console*: {aap_url}
-. Log in with your credentials: `{user}` / `{password}`
+. Log in with your AAP credentials: `{aap_username}` / `{password}`
 . Find the *Platform Version* on the dashboard or under the help menu (*?* icon → *About*).
 . Submit the platform version as your flag.
 
@@ -101,7 +102,7 @@ These challenges introduce Ansible CLI skills.
 === Great Git-Away
 
 . Open *Gitea*: {gitea_url}
-. Log in with your credentials.
+. Log in as `{gitea_username}` with your provisioned lab password.
 . Find the repository that was created for you and note its name.
 . Submit the repository name as your flag in CTFd.
 
@@ -112,10 +113,11 @@ These challenges introduce Ansible CLI skills.
 [source,bash,subs="attributes"]
 ----
 cd ~
-git clone https://{user}:{password}@$(echo {gitea_url} | sed 's|https://||')/{user}/ansible-survival-kit.git
+git clone {gitea_url}/{gitea_username}/ansible-survival-kit.git
 cd ansible-survival-kit
 ----
 +
+. If Git prompts for credentials, use `{gitea_username}` and your provisioned lab password.
 . Run the `hello-world.yml` playbook:
 +
 [source,bash]
