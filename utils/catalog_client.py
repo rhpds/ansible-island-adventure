@@ -72,7 +72,9 @@ def cookie_map(path, server):
     except json.JSONDecodeError:
         jar = http.cookiejar.MozillaCookieJar(str(path))
         try:
-            jar.load(ignore_discard=True)
+            # Filter expiration below so Netscape session cookies with expiry 0
+            # are retained, consistently with the JSON import formats.
+            jar.load(ignore_discard=True, ignore_expires=True)
         except (OSError, http.cookiejar.LoadError):
             raise ValueError("Expected cookie JSON or a Netscape cookie file") from None
         data = [{"name": c.name, "value": c.value, "domain": c.domain,

@@ -130,7 +130,7 @@ Best,
 Confirm that you have access to everything needed for independent delivery:
 
 * [ ] Deployment repository (this repository)
-* [ ] Challenge definitions (`vars/challenges.yml`)
+* [ ] Challenge definitions (`roles/ctfd/vars/challenges.yml` in the instructor toolkit)
 * [ ] Facilitation guide and handout templates
 * [ ] RHDP catalog access for ordering environments
 * [ ] Your completed lab experience for confidence in facilitation

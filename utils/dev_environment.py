@@ -439,6 +439,16 @@ def parser():
     login.add_argument("--no-browser", action="store_true", help="Print the SSO URL without opening it")
     login.add_argument("--timeout", type=float, default=300)
     commands.add_parser("whoami", help="Verify SSO and API access without ordering")
+    destroy = commands.add_parser("destroy", help="Plan UID-checked cleanup; students before leaderboard")
+    destroy.add_argument("--leaderboard-file", type=Path, required=True)
+    destroy.add_argument("--workshop-file", type=Path, action="append", default=[])
+    destroy.add_argument("--student-file", type=Path, action="append", default=[])
+    destroy.add_argument("--include-linked-students", action="store_true", help="Include all student CIs in this namespace using the selected leaderboard")
+    destroy.add_argument("--leaderboard-catalog", default=LEADERBOARD)
+    destroy.add_argument("--student-catalog", default=STUDENT)
+    destroy.add_argument("--execute", action="store_true", help="Execute the cleanup; default is plan only")
+    destroy.add_argument("--poll", type=float, default=15)
+    destroy.add_argument("--timeout", type=float, default=3600)
     export = commands.add_parser("export-students", help="Export private post-deployment Ansible inventory; places no orders")
     export.add_argument("--run", help="Run ID; defaults to the latest run")
     select = commands.add_parser("use-leaderboard", help="Save a healthy existing leaderboard for reuse; places no orders")
@@ -588,6 +598,11 @@ def main(argv=None):
         if args.command == "whoami":
             print(f"User: {client.session['user']}\nNamespace: {client.session['userNamespace']['name']}")
             return 0
+        if args.command == "destroy":
+            from environment_cleanup import destroy_environment
+            with state_lock(args.state_dir):
+                destroy_environment(client, args)
+            return 0
         if args.command == "inspect":
             for reference in (args.leaderboard_catalog, args.student_catalog):
                 item = client.catalog(reference)
@@ -598,7 +613,7 @@ def main(argv=None):
             return 0
         with state_lock(args.state_dir):
             if args.command == "export-students":
-                from student_inventory import inventory_from_claims
+                from student_inventory import inventory_from_claims, kubeconfig_from_claim
                 run = load_run(args.state_dir, args.run)
                 if run["server"] != client.server or run["user"] != client.session["user"]:
                     raise CatalogError("Run belongs to a different server or account")
@@ -608,6 +623,8 @@ def main(argv=None):
                           for role, order in run["orders"].items()}
                 path = args.state_dir / "runs" / (run["id"] + ".students.inventory.json")
                 inventory = inventory_from_claims(run, claims, path.with_suffix(".kubeconfig"))
+                kubeconfig = kubeconfig_from_claim(claims['leaderboard'])
+                secure_write(path.with_suffix('.kubeconfig'), kubeconfig)
                 secure_write(path, inventory)
                 print(f"Exported private student inventory: {path}")
                 print("No catalog orders or service changes made.")

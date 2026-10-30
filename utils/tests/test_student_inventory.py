@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from catalog_client import CatalogError
 from dev_environment import STUDENT, LEADERBOARD, build_claim
-from student_inventory import inventory_from_claims
+from student_inventory import inventory_from_claims, kubeconfig_from_claim
 from test_dev_environment import DATA, SESSION, ready_claim, run_state
 
 
@@ -80,6 +80,20 @@ class InventoryTests(unittest.TestCase):
         del self.claims["student-1"]["status"]["summary"]["provision_data"]["ctfd_admin_password"]
         with self.assertRaisesRegex(ValueError, "ctfd_admin_password"):
             self.inventory()
+
+    def test_control_host_kubeconfig_uses_leaderboard_token_and_ca(self):
+        import base64
+        data = self.claims['leaderboard']['status']['summary']['provision_data']
+        data.update(openshift_api_server_url='https://api.example.test:6443',
+                    openshift_cluster_admin_token='synthetic-api-token',
+                    openshift_api_ca_cert='-----BEGIN CERTIFICATE-----\nsynthetic\n-----END CERTIFICATE-----')
+        config = kubeconfig_from_claim(self.claims['leaderboard'])
+        self.assertEqual(config['current-context'], 'leaderboard')
+        self.assertEqual(config['users'][0]['user']['token'], 'synthetic-api-token')
+        cluster = config['clusters'][0]['cluster']
+        self.assertEqual(cluster['server'], data['openshift_api_server_url'])
+        self.assertEqual(base64.b64decode(cluster['certificate-authority-data']).decode(), data['openshift_api_ca_cert'])
+        self.assertNotIn('insecure-skip-tls-verify', cluster)
 
 
 if __name__ == "__main__":

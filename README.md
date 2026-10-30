@@ -248,8 +248,45 @@ the gitignored `.aia-dev/` directory. JSON files are written atomically with mod
 `0600`, and newly created state directories use `0700`. Keep custom state
 directories equally private. Global options such as `--state-dir` and `--server`
 go **before** the command, and must be reused when resuming that environment.
-The CLI has no resource deletion operation; manage cleanup and environment
-lifespans in the catalog, taking shared leaderboard dependencies into account.
+### Destroy and rebuild an existing deployment
+
+First export the leaderboard ResourceClaim and, if applicable, the student
+Workshop YAML from RHDP. These exports contain credentials and remain local.
+Plan cleanup before executing it:
+
+```bash
+python utils/dev-environment.py destroy \
+  --leaderboard-file lb-creds.yaml --workshop-file student-creds.yaml \
+  --include-linked-students
+```
+
+The plan lists exact names and UIDs. `--include-linked-students` discovers all
+student CIs in the same namespace that reference this leaderboard and their
+workshops. Without it, unexpected dependent students block cleanup. For
+standalone student exports, use repeatable `--student-file` arguments instead
+of, or alongside, `--workshop-file`.
+
+To destroy those resources and their progress, repeat the command with
+`--execute`. Workshops are deleted first to stop provisioning more students;
+student claims must finish deletion before the shared leaderboard is deleted.
+UID preconditions prevent deleting a replacement resource. Mixed-cluster
+workshops are rejected, and dependencies are checked again before removing the
+leaderboard. Rerun the same command after an interruption to continue cleanup.
+
+After cleanup, publish the committed content and order a fresh pair:
+
+```bash
+python utils/dev-environment.py publish-content --commit HEAD
+python utils/dev-environment.py bootstrap --new-leaderboard --workshop \
+  --workshop-user-count 2 --keep-on-failure --accept-warnings
+python utils/dev-environment.py export-students
+```
+
+The exporter writes both the private inventory and its token/CA kubeconfig.
+Then run `automation/ansible/post_deploy.yml` using that inventory and the local
+event vault password file, as described in the collection README. The temporary
+Dev Spaces workaround remains necessary until the upstream provisioning PRs
+are deployed and verified.
 
 Run offline tests without SSO or catalog orders:
 

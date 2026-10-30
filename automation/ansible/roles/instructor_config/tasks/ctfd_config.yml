@@ -129,7 +129,7 @@
          regex_findall('(?m)^CHALLENGE_COUNT:([0-9]+)$') | first | int }}
 
 - name: "{{ instructor.name }} — Setup, login, and import CTFd archive"
-  when: _existing_challenge_count == 0
+  when: _existing_challenge_count | int == 0
   ansible.builtin.shell: |
     set -eo pipefail
     URL="{{ _ctfd_base_url }}"

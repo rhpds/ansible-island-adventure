@@ -3,60 +3,36 @@
 
 == Architecture Tour on OpenShift
 
-Your Ansible Island Adventure environment is fully deployed on a shared OpenShift cluster.
-In this section you will tour the running architecture and verify that all services are accessible.
+Your environment is fully deployed on a shared OpenShift cluster. Each learner has a personal CTFd instance for this facilitator-training lab.
 
 === Log into the OpenShift Console
 
 . Open the OpenShift Console: {ocp_console_url}
-. Log in with your instructor credentials: `{keycloak_username}` / `{password}`
-. After login, you should see the OpenShift web console dashboard.
+. Log in with your instructor credentials: `{keycloak_username}` / `{password}`.
+. Open your username menu and select *Copy login command*. Authenticate if requested, then select *Display Token*.
+. Keep the generated `oc login` command and token privately for your Dev Spaces terminal. Treat the token as a password; do not put it in Git, screenshots, or shared notes. Generate a new token here if it expires.
 
 === Identify Running Services
 
-From the OpenShift console, navigate to *Workloads → Pods* and explore the following namespaces:
+From *Workloads → Pods*, explore the services visible to your account:
 
 [cols="1,2,2",options="header"]
 |===
-| Service | Namespace | Purpose
-
-| *CTFd*
-| `{keycloak_username}-ctfd`
-| Your personal CTF scoring platform instance
-
-| *MariaDB*
-| `{keycloak_username}-ctfd`
-| Database backend for CTFd
-
-| *Redis*
-| `{keycloak_username}-ctfd`
-| Cache layer for CTFd
-
-| *Gitea*
-| `gitea`
-| Shared Git hosting (your repos are under your user account)
-
-| *AAP Controller*
-| Shared AAP namespace
-| Ansible Automation Platform — your organization is `{aap_username}`
-
-| *Dev Spaces*
-| `openshift-devspaces`
-| Browser-based IDE workspace
-
-| *Managed Node VM*
-| Student environment
-| RHEL 9 virtual machine for Ansible challenges (provisioned by the student catalog item, not on this cluster)
+| Service | Location | Purpose
+| *CTFd, MariaDB, Redis* | `{keycloak_username}-ctfd` | Your scoring platform, database, and cache
+| *Gitea* | `gitea` | Shared Git hosting; your repositories belong to `{gitea_username}`
+| *AAP Controller* | Shared AAP namespace | Your organization and automation resources
+| *Dev Spaces* | `openshift-devspaces` (platform); your user workspace namespace | IDE and workspace containers
+| *Managed Node VM* | Student environment | RHEL 9 VM for Ansible challenges, provisioned separately
 |===
 
 === Verify Service Access
 
-Open each service URL in your browser and confirm you can log in:
+Open each service and confirm you can log in:
 
 [cols="1,2",options="header"]
 |===
 | Service | URL
-
 | CTFd | {ctfd_url}
 | Gitea | {gitea_url}
 | AAP | {aap_url}
@@ -66,99 +42,122 @@ Open each service URL in your browser and confirm you can log in:
 
 include::partial$service-access.adoc[]
 
+== Open the Instructor Workspace
+
+. In Gitea, open your *`aia-instructor`* repository under your own account. Module 3 uses the instructor toolkit; Module 4 uses the other repository, `ansible-survival-kit`.
+. Click *Code → HTTPS* and copy the clone URL. Your URL has this form:
++
+[source,text,subs="attributes"]
+----
+{gitea_url}/{gitea_username}/aia-instructor.git
+----
+. Open {devspaces_url}, select *Create Workspace*, and paste that HTTPS URL.
+. Use the repository's `.devfile.yaml` and trust the repository when prompted. Wait for the editor and any collection-installation startup task to finish. The devfile supplies Ansible, Lint, Navigator, and related utilities.
+. If Git requests authentication, use `{gitea_username}` and your provisioned lab password.
+. Open *Terminal → New Terminal* and verify the tools:
++
+[source,bash]
+----
+ansible --version
+ansible-lint --version
+ansible-navigator --version
+----
+. Paste the `oc login` command saved from the OpenShift console into this terminal. Run `oc whoami` and confirm it reports your instructor account. Keep this token available for the survival-kit workspace in Module 4 as well.
+
+=== Configure Your Vault Password
+
+Your organizer supplies the vault password for the encrypted files in your instructor repository. It is separate from your OpenShift login token and your service login password.
+
+In the workspace terminal, prepare the password file:
+
+[source,bash]
+----
+cd /projects/aia-instructor
+umask 077
+vim .vault-password
+----
+
+Enter only the organizer-provided password on one line, then save and exit. Verify it:
+
+[source,bash]
+----
+chmod 600 .vault-password
+ansible-vault view roles/ctfd/vars/flags.yml
+----
+
+The instructor devfile sets `ANSIBLE_VAULT_PASSWORD_FILE` to `/projects/aia-instructor/.vault-password`. Keep this file local to your workspace; never commit it or include it in an image. A newly created workspace may require this setup again.
+
 == Deployment Artifacts Walkthrough
 
-The environment was deployed using an Ansible playbook. Understanding these artifacts helps you troubleshoot and customize the platform.
-
-=== Playbook Structure
-
-The deployment playbook (`ansible-testing/deploy.yml`) uses a role-based structure to provision the full environment. The roles map to the logical deployment stages:
+Open *`deploy.yml` at the root of your Gitea `aia-instructor` repository*. Explore its pre-tasks and follow the `ctfd` and `verifier` roles:
 
 [source,text]
 ----
-pre_tasks:
-  ├── Load resource claim (.cnv.env)
-  ├── Extract cluster credentials
-  ├── Login to OpenShift as cluster-admin
-  └── Build instructor list from player.creds
-
-tasks (roles in execution order):
-  ├── cluster_scale    → Scale worker nodes and install operators
-  ├── players          → Create per-instructor namespaces and accounts
-  ├── devspaces        → Deploy Red Hat OpenShift Dev Spaces
-  ├── ctfd             → Deploy per-instructor CTFd instances
-  ├── gitea            → Deploy shared Gitea and fork repos per instructor
-  ├── aap              → Configure AAP organizations, inventories, credentials
-  └── verifier         → Deploy per-instructor challenge verifier sidecars
+aia-instructor/
+  ├── deploy.yml                  → Full deployment and CTFd archive import
+  ├── update-challenges.yml       → Update challenge content through the CTFd API
+  ├── generate-handouts.yml       → Generate participant handouts
+  └── roles/
+      ├── ctfd/
+      │   ├── tasks/              → Infrastructure, players, archive, and upload tasks
+      │   └── vars/
+      │       ├── challenges.yml
+      │       ├── challenges_advanced.yml
+      │       └── flags.yml       → Vault-encrypted answers
+      └── verifier/               → Challenge verification service
 ----
 
-The managed node VM is provisioned separately by the student catalog item — it is not part of this deployer. In the current implementation, these logical stages are organized into Ansible roles such as `cluster_setup`, `shared_gitea`, `instructor`, `configure_gitea`, `configure_ctfd`, and `configure_aap`. The role names may evolve, but the deployment stages remain the same.
+The shared platform was provisioned separately. The toolkit's `deploy.yml` does not represent every platform provisioning step; do not assume it installs AAP or Dev Spaces.
 
-=== Key Roles
+The `ctfd` role deploys CTFd, MariaDB, and Redis; configures players and Gitea; and builds and imports a CTFd configuration archive. Some tasks also change cluster-wide configuration. The `verifier` role deploys the service that checks automation results on managed nodes.
 
-[cols="1,3",options="header"]
-|===
-| Logical Stage | What It Does
+=== Deployment Input Files
 
-| `cluster_scale`
-| Scales worker nodes and installs cluster-wide operators (AAP 2.7, Dev Spaces)
-
-| `players`
-| Creates per-instructor namespaces, user accounts, and cached credentials (`player.creds`)
-
-| `devspaces`
-| Deploys Red Hat OpenShift Dev Spaces for browser-based IDE access
-
-| `ctfd`
-| Deploys per-instructor CTFd instances with MariaDB and Redis
-
-| `gitea`
-| Deploys shared Gitea instance and forks the `ansible-survival-kit` repository per instructor
-
-| `aap`
-| Configures per-instructor AAP organizations, inventories, and machine credentials
-
-| `verifier`
-| Deploys per-instructor challenge verification sidecars that validate automation results on managed nodes
-|===
-
-=== Stateful Files
-
-Two key files coordinate deployment state and bridge the platform provisioning and the deployment automation:
+Review the input files named by the current toolkit. These are private inputs, not files to commit:
 
 [cols="1,3",options="header"]
 |===
 | File | Purpose
-
-| `.cnv.env`
-| ResourceClaim from RHDP — contains cluster API URL, admin credentials, apps domain, and user list. The platform provides this file automatically when the environment is provisioned.
-
-| `player.creds`
-| Cached per-instructor credentials — passwords and verification tokens generated on the first run and reused on subsequent runs. This cache-or-generate pattern ensures credential stability across re-deployments.
+| `rosa.creds` | Legacy resource-claim input expected by `deploy.yml` and `update-challenges.yml`. Their pre-tasks extract `rosa_openshift_*` fields and log in again.
+| `workshop.creds` | Workshop input expected by `deploy.yml` to obtain the player count.
+| `player.creds` | Cached player passwords and verification tokens, generated on the first run and reused on later runs.
 |===
 
-The deployer loads `.cnv.env` to discover the cluster and build the instructor list. On the first run, it generates `player.creds`; on subsequent runs, it loads the cached version to avoid regenerating passwords. Flags are vault-encrypted in `vars/flags.yml` so they cannot be read from the repository.
+Reusing player credentials does *not* preserve CTFd scores when a configuration archive is restored. Encrypted answers are in `roles/ctfd/vars/flags.yml`. The managed node VM and SSH access are provisioned separately.
 
-NOTE: The managed node VM and its SSH access are provisioned separately by the student catalog item — they are not managed by the leaderboard deployer.
+=== Verify the Playbook Before Playing
 
-== RHDP Ordering and Provisioning Flow
+First validate the toolkit syntax:
 
-For your own customer events, the workflow is:
+[source,bash]
+----
+cd /projects/aia-instructor
+ansible-playbook deploy.yml --syntax-check
+----
 
-. *Order from RHDP* — Search for "Ansible Island Adventure" in the https://catalog.demo.redhat.com[Red Hat Demo Platform catalog] and order the catalog item.
-. *Wait for provisioning* — The platform provisions a shared OpenShift cluster and runs the deployment playbook automatically. This takes approximately 60 minutes.
-. *Receive credentials* — RHDP provides cluster credentials and instructor handout data via the service details page.
-. *Verify and customize* — Log in, verify all services, and customize challenges if needed (see Module 5).
-. *Distribute handouts* — Share participant credentials and URLs before or at the start of the event.
-
-[NOTE]
+[WARNING]
 ====
-The environment arrives *fully deployed*. You do not need to run the deployment playbook for customer events — it runs automatically during provisioning.
+A full `deploy.yml` run imports a CTFd configuration archive and *resets the target CTFd environment*. Existing scores, submissions, and progress are lost. Complete any approved deployment exercise *before Module 4*.
 ====
+
+The current upstream playbook expects legacy `rosa.creds` and `workshop.creds` inputs and can change cluster-wide resources. A personal `oc login` token alone does not make it ready for this shared training cluster. The facilitator must confirm an isolated target, compatible input files, permissions, and CTFd settings before you execute it. Do not substitute the shared leaderboard's administrator credentials.
+
+When the facilitator has supplied and verified that isolated deployment configuration, run from the repository root:
+
+[source,bash]
+----
+ansible-playbook deploy.yml
+----
+
+Confirm the run succeeds and the intended CTFd board is accessible before Module 4. If compatible inputs and an isolated target have not been supplied, complete the syntax check and artifact review only; full deployment verification remains blocked until the toolkit is adapted for this training environment.
+
+== Preparing a Customer Event
+
+Arrange a pre-deployed environment with adequate lead time, verify service access and challenge content, then distribute participant handouts. Normally participants share the customer event's CTFd board; the separate boards in this training lab let learners practice customization independently.
 
 == Key Takeaways
 
-* The environment arrives fully deployed from RHDP — no manual installation is required for customer events.
-* The deployment playbook and roles are provided as artifacts so facilitators understand what was deployed and can customize it.
-* Stateful files (`.cnv.env`, `player.creds`) bridge the platform provisioning and the deployment automation.
-* Ordering from RHDP is the supported path for running customer-facing events.
+* Use `aia-instructor` for deployment and customization; use `ansible-survival-kit` to play the challenges in Module 4.
+* Save your personal OpenShift login token and use it in your Dev Spaces terminal.
+* Inspect the root `deploy.yml`, its roles, and its actual input files before running it.
+* Full CTFd archive deployment resets progress. Perform an approved deployment exercise before playing.

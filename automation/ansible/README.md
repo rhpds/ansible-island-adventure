@@ -8,6 +8,7 @@ Catalog workload roles live in this directory:
 
 - `roles/instructor_config/` — Instructor services and access, including CTFd bootstrap, Gitea, AAP, and Keycloak integration
 - `roles/keycloak_ocp_logout_fix/` — Keycloak/OpenShift logout configuration
+- `roles/configure_devspaces/` — Shared leaderboard workspace limits and persistent storage policy, applied by post-deploy
 
 The project root also retains `ansible-testing/` playbooks and the
 `collections/ansible_collections/rhpds/aia/` collection for local role development.
@@ -82,6 +83,12 @@ commands that ignore termination are killed after another five seconds.
 
 ## Configure deployed students
 
+The deployment sequence has three responsibilities: the leaderboard CI creates
+the shared cluster and Dev Spaces service; the student CI integrates with that
+leaderboard and creates the requested student accounts and resources; this
+post-deploy playbook applies iterated configuration to those existing resources.
+No new CI orders or deployments are needed to change the workspace policy.
+
 `post_deploy.yml` connects each already deployed student CI's CTFd instance and
 Gitea account. It uses the real definitions in
 [`ansible-testing/vars/challenges.yml`](../../ansible-testing/vars/challenges.yml)
@@ -93,6 +100,28 @@ including corrected YAML quoting of regex answers and keys matched by challenge
 name. The repository-name and main-branch Hello World answers were also corrected
 to match the current student Gitea content. The vault password is supplied
 separately; `.vault-password` is gitignored.
+
+After validating all student mappings and flags, post-deploy configures Dev
+Spaces once for the shared leaderboard cluster, before its serial student
+configuration. Each instructor can run two simultaneous workspaces, with
+`per-workspace` persistent storage. Separate PVCs prevent the cross-node
+`Multi-Attach` failures caused by sharing a ReadWriteOnce per-user volume.
+The exported inventory represents one leaderboard; do not combine students
+from different leaderboard clusters into it.
+
+`TODO(devspaces-ci-bootstrap)`: this Dev Spaces step is a temporary compatibility
+workaround. Remove the automatic `configure_devspaces.yml` import from
+`post_deploy.yml` after the shared `core_workloads` role exposes PVC strategy,
+the leaderboard AgnosticV CI sets two running workspaces and `per-workspace`
+storage, and a fresh leaderboard deployment is verified before post-deploy runs.
+Verification must include two simultaneous workspaces for one instructor with
+separate bound PVCs. Keep the standalone repair entry point while older
+deployments still need it. The student CI does not need this cluster-wide setting.
+To bypass the workaround during validation of the new CI defaults, use
+`--skip-tags devspaces_ci_workaround` with `post_deploy.yml`.
+Track the upstream feature in [core_workloads#197](https://github.com/rhpds/core_workloads/pull/197)
+and the dependent leaderboard configuration in
+[agnosticv#28869](https://github.com/rhpds/agnosticv/pull/28869).
 
 From the repository root, using the development virtual environment:
 
@@ -112,6 +141,26 @@ CTFd URL, and Gitea owner before writing an inventory with mode `0600` under
 `.aia-dev/`. It exports the actual published credentials, including different
 CTFd and Gitea usernames, and records the Python interpreter used for export.
 It places no orders. The generated kubeconfig is also kept under `.aia-dev/`.
+
+To iterate on Dev Spaces alone, use the same exported inventory:
+
+```bash
+cd automation/ansible
+ansible-playbook -i ../../.aia-dev/runs/<run-id>.students.inventory.json \
+  configure_devspaces.yml
+```
+
+This entry point needs no event vault and does not configure Gitea or CTFd.
+Override `aia_devspaces_running_workspaces_per_user` (default `2`) if needed;
+the policy uses `aia_devspaces_pvc_strategy: per-workspace`. It patches the
+existing CheCluster without recreating the service. The current cluster's
+total saved-workspace limit is already two, so it accommodates both workspaces.
+
+The storage default applies to newly created workspaces. Existing per-user
+workspaces and their PVCs are left intact; save or back up uncommitted work and
+recreate those workspaces with per-workspace storage when ready. Do not simply
+change their storage attribute and assume files have moved. Each new workspace
+has separate storage, including its own repository checkout and local files.
 
 All students' event flags are resolved and checked before service changes.
 Use `--tags preflight` to run just this validation. Override

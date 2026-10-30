@@ -33,6 +33,38 @@ Your service URLs:
 
 Use `{ctfd_admin_username}` when you need to manage your CTFd instance as the facilitator.
 
+== Open the Ansible Survival Kit Workspace
+
+For this module, use your *`ansible-survival-kit`* repository. The `aia-instructor` workspace from Module 3 is for managing the event; the survival kit contains the participant challenge playbooks.
+
+. Save your work in the instructor workspace. After the event organizer has run the post-deploy configuration, you can keep *two workspaces running*: the instructor toolkit and the survival kit, each with its own persistent storage.
+. If your instructor workspace predates that configuration and still uses shared per-user storage, stop it and wait until it shows *Stopped* before continuing. Back up local changes before recreating an older workspace; changing the storage setting does not move its files.
+. Open Gitea at {gitea_url} and sign in as `{gitea_username}` with your provisioned lab password.
+. Open *your own* `ansible-survival-kit` repository and select the *`main`* branch.
+. Click *Code → HTTPS* and copy the clone URL. It should have this form:
++
+[source,text,subs="attributes"]
+----
+{gitea_url}/{gitea_username}/ansible-survival-kit.git
+----
+. Open {devspaces_url}, choose *Create Workspace*, and paste that URL. Use the repository's `.devfile.yaml` and select *Trust this repository* when prompted. If Git requests credentials, use your Gitea account.
+. Wait for the editor and the *Install lab collections* startup task to finish. The devfile supplies Ansible, Lint, Navigator, and related tools; keep it rather than selecting the default devfile.
+. Open *Terminal → New Terminal* and check the repository and tools:
++
+[source,bash]
+----
+cd /projects/ansible-survival-kit
+git branch --show-current
+ansible --version
+ansible-lint --version
+ansible-navigator --version
+----
+. Confirm that the branch is `main`. Paste the personal `oc login` command you saved in Module 3 into this terminal and verify your identity with `oc whoami`. Generate a new token from the OpenShift console if it has expired.
+
+Dev Spaces clones the repository for you. Run the CLI exercises below from `/projects/ansible-survival-kit`; you do not need another clone. The AAP Treasure Hunt project later uses the separate `treasurehunt` branch.
+
+The survival-kit workspace does not load the instructor toolkit's `.vault-password` file. Use each challenge's specified vault passphrase when prompted; the instructor vault password is not the password for every challenge.
+
 == Warm Up Challenges
 
 These challenges get everyone started and verify basic access.
@@ -51,7 +83,7 @@ The facilitator provides a key to unlock the remaining challenges.
 [NOTE]
 ====
 In a customer event, *you* are the facilitator. You control when to reveal this key to pace the event.
-The unlock key is defined in `vars/flags.yml` (vault-encrypted).
+The unlock key is defined in `roles/ctfd/vars/flags.yml` in the instructor toolkit (vault-encrypted).
 ====
 
 === Ansible Docs and Collections
@@ -71,7 +103,7 @@ These challenges verify that participants can access their environment tools.
 
 === The Navigator's Run
 
-. Open your *Dev Spaces* workspace: {devspaces_url}
+. Use the *Ansible Survival Kit* Dev Spaces workspace you opened above.
 . Open a terminal within the workspace.
 . Run the following command to find the Ansible core version:
 +
@@ -103,21 +135,18 @@ These challenges introduce Ansible CLI skills.
 
 . Open *Gitea*: {gitea_url}
 . Log in as `{gitea_username}` with your provisioned lab password.
-. Find the repository that was created for you and note its name.
+. Find your `ansible-survival-kit` repository and note its name.
 . Submit the repository name as your flag in CTFd.
 
 === Hello World Beach
 
-. In your Dev Spaces terminal, clone your repository from Gitea:
+. In the survival-kit Dev Spaces terminal, use the repository already cloned by Dev Spaces:
 +
-[source,bash,subs="attributes"]
+[source,bash]
 ----
-cd ~
-git clone {gitea_url}/{gitea_username}/ansible-survival-kit.git
-cd ansible-survival-kit
+cd /projects/ansible-survival-kit
 ----
 +
-. If Git prompts for credentials, use `{gitea_username}` and your provisioned lab password.
 . Run the `hello-world.yml` playbook:
 +
 [source,bash]
@@ -223,6 +252,7 @@ After completing the challenges, reflect on the experience from a *facilitator's
 == Key Takeaways
 
 * Playing through the event as a participant is essential for effective facilitation — you must know the challenges firsthand.
+* Use your `ansible-survival-kit` Gitea clone in Dev Spaces for CLI challenges; return to `aia-instructor` for event administration.
 * The challenge progression moves from basic Ansible awareness through CLI proficiency to controller orchestration, covering a wide skill spectrum.
 * The scoring and hint system balances challenge difficulty with accessibility, keeping all skill levels engaged.
 * Understanding which challenges resonate with different audiences helps you customize and pace future customer events.

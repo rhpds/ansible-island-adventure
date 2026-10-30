@@ -1,5 +1,6 @@
 """Private Ansible inventory for already deployed student CIs."""
 
+import base64
 import re
 import sys
 from urllib.parse import urlsplit
@@ -23,6 +24,24 @@ def endpoint(data, key):
             or url.query or url.fragment or url.path):
         raise ValueError(f"Student provision data has an invalid {key}")
     return value
+
+
+def kubeconfig_from_claim(claim):
+    """Build the private control-host kubeconfig from the refreshed leaderboard."""
+    data = extract_provision_data(claim)
+    server = endpoint(data, 'openshift_api_server_url')
+    token = required(data, 'openshift_cluster_admin_token')
+    cluster = {'server': server}
+    ca = data.get('openshift_api_ca_cert')
+    if ca:
+        if not isinstance(ca, str) or 'BEGIN CERTIFICATE' not in ca:
+            raise ValueError('Leaderboard provision data has an invalid API CA certificate')
+        cluster['certificate-authority-data'] = base64.b64encode(ca.encode()).decode()
+    return {'apiVersion': 'v1', 'kind': 'Config',
+            'clusters': [{'name': 'leaderboard', 'cluster': cluster}],
+            'users': [{'name': 'leaderboard-admin', 'user': {'token': token}}],
+            'contexts': [{'name': 'leaderboard', 'context': {'cluster': 'leaderboard', 'user': 'leaderboard-admin'}}],
+            'current-context': 'leaderboard'}
 
 
 def inventory_from_claims(run, claims, kubeconfig):

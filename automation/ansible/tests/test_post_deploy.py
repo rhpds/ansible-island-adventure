@@ -30,6 +30,7 @@ class PostDeployTests(unittest.TestCase):
         self.collection = self.root / "automation/ansible"
         self.collection.mkdir(parents=True)
         shutil.copy(COLLECTION / "post_deploy.yml", self.collection)
+        shutil.copy(COLLECTION / "configure_devspaces.yml", self.collection)
         library = self.collection / "library"
         library.mkdir()
         (library / "aia_ctfd_flags.py").write_text('''from ansible.module_utils.basic import AnsibleModule
@@ -42,6 +43,11 @@ module = AnsibleModule(argument_spec={
 module.exit_json(changed=False, updated=0)
 ''')
         shutil.copytree(COLLECTION / "roles/configure_student", self.collection / "roles/configure_student")
+        devspaces_tasks = self.collection / "roles/configure_devspaces/tasks"
+        devspaces_tasks.mkdir(parents=True)
+        (devspaces_tasks / "main.yml").write_text(yaml.safe_dump([
+            {"ansible.builtin.debug": {"msg": "shared-devspaces-policy-applied"}},
+        ]))
         tasks = self.collection / "roles/instructor_config/tasks"
         tasks.mkdir(parents=True)
         (tasks / "oc_login.yml").write_text(yaml.safe_dump([
@@ -144,8 +150,8 @@ module.exit_json(changed=False, updated=0)
         self.config = self.root / "ansible.cfg"
         self.config.write_text("[defaults]\nstdout_callback=default\n")
 
-    def run_playbook(self):
-        result = subprocess.run(["ansible-playbook", "-i", str(self.inventory), str(self.collection / "post_deploy.yml")],
+    def run_playbook(self, *extra_args):
+        result = subprocess.run(["ansible-playbook", "-i", str(self.inventory), str(self.collection / "post_deploy.yml"), *extra_args],
                                 env=dict(os.environ, ANSIBLE_CONFIG=str(self.config), ANSIBLE_NOCOLOR="1"),
                                 capture_output=True, text=True, timeout=90)
         return result.returncode, result.stdout + result.stderr
@@ -153,6 +159,7 @@ module.exit_json(changed=False, updated=0)
     def test_two_students_link_to_their_own_repos_and_rerun_does_not_commit(self):
         rc, output = self.run_playbook()
         self.assertEqual(rc, 0, output)
+        self.assertEqual(output.count('"msg": "shared-devspaces-policy-applied"'), 1, output)
         self.assertEqual(len(self.guides), 2)
         for user, content in self.guides.items():
             self.assertIn(self.url + "/" + user + "/ansible-survival-kit", content)
@@ -168,6 +175,24 @@ module.exit_json(changed=False, updated=0)
         self.flags.write_text("ctfd_flags: {}\n")
         rc, output = self.run_playbook()
         self.assertNotEqual(rc, 0, output)
+        self.assertEqual(self.requests, [])
+
+    def test_devspaces_workaround_can_be_skipped_without_skipping_students(self):
+        rc, output = self.run_playbook("--skip-tags", "devspaces_ci_workaround")
+        self.assertEqual(rc, 0, output)
+        self.assertNotIn('"msg": "shared-devspaces-policy-applied"', output)
+        self.assertEqual(len(self.guides), 2)
+
+    def test_devspaces_entry_point_needs_no_flags_or_student_service_calls(self):
+        self.flags.unlink()
+        result = subprocess.run(
+            ["ansible-playbook", "-i", str(self.inventory), str(self.collection / "configure_devspaces.yml")],
+            env=dict(os.environ, ANSIBLE_CONFIG=str(self.config), ANSIBLE_NOCOLOR="1"),
+            capture_output=True, text=True, timeout=90,
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertEqual(output.count('"msg": "shared-devspaces-policy-applied"'), 1, output)
         self.assertEqual(self.requests, [])
 
 

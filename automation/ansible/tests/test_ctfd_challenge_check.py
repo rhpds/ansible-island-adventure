@@ -140,7 +140,7 @@ sys.exit(response.get('rc', 0))
             {"stdout": "CHALLENGE_COUNT:0\n", "sleep": 30},
         ], timeout=1, retries=1)
         self.assertNotEqual(rc, 0, output)
-        self.assertIn("sending signal TERM", output)
+        self.assertIn("sending signal term", output.lower())
         self.assertIn('"rc": 124', output)
         self.assertEqual(attempts, 2)
         self.assertNotIn("TASK [Import boundary]", output)
