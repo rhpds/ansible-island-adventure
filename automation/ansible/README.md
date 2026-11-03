@@ -95,10 +95,13 @@ Gitea account. It uses the real definitions in
 and vault-encrypted answers in
 [`ansible-testing/vars/flags.yml`](../../ansible-testing/vars/flags.yml).
 The flags were aligned with the instructor toolkit at
-[`0a5d583`](https://github.com/l3acon/aia-instructor/tree/0a5d5837e84f64a79a7d8ef62833d0f86d10a793),
+[`d05745d`](https://github.com/l3acon/aia-instructor/tree/d05745d1c726f12bf460aaebb5126b7245957016),
 including corrected YAML quoting of regex answers and keys matched by challenge
 name. The repository-name and main-branch Hello World answers were also corrected
-to match the current student Gitea content. The vault password is supplied
+to match the current student Gitea content. The platform and controller answers
+were checked against the deployed gateway and controller ping APIs. Recheck
+version-based answers when changing AAP or the workspace image.
+The vault password is supplied
 separately; `.vault-password` is gitignored.
 
 After validating all student mappings and flags, post-deploy checks Dev
@@ -215,7 +218,8 @@ Before enabling that integration:
   qualified role and module names once installed.
 - Test initial provisioning, rerun, and failure recovery: 25 challenges with
   real flags, usable student/admin logins, correct repository links and
-  devfiles, and preserved learner commits, solves, scores, and account access.
+  devfiles, version answers that match the deployed AAP and workspace tools,
+  and preserved learner commits, solves, scores, and account access.
 
 For the main-event review, walk through the deployed Showroom Modules 03–05
 using a student's published credentials, start both repository workspaces,
