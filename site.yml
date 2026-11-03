@@ -1,7 +1,7 @@
 ---
 site:
-  title: My Project
-  url: https://github.com/rhpds/my-project
+  title: Ansible Island Adventure
+  url: https://github.com/rhpds/ansible-island-adventure
   start_page: modules::index.adoc
 
 content:
