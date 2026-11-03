@@ -1,4 +1,4 @@
-# rhpds.aia — Ansible Island Adventure Collection
+# ansible_island_adventure.automation — Ansible Island Adventure Collection
 
 This collection contains automation for deploying and configuring the Ansible Island Adventure CTF platform on OpenShift CNV.
 
@@ -95,7 +95,7 @@ Gitea account. It uses the real definitions in
 and vault-encrypted answers in
 [`ansible-testing/vars/flags.yml`](../../ansible-testing/vars/flags.yml).
 The flags were aligned with the instructor toolkit at
-[`6009a82`](https://github.com/l3acon/aia-instructor/tree/6009a828f76f4346a1d6b3c03ccdd3131ab0d278),
+[`0a5d583`](https://github.com/l3acon/aia-instructor/tree/0a5d5837e84f64a79a7d8ef62833d0f86d10a793),
 including corrected YAML quoting of regex answers and keys matched by challenge
 name. The repository-name and main-branch Hello World answers were also corrected
 to match the current student Gitea content. The vault password is supplied
