@@ -15,6 +15,7 @@ import unittest
 from urllib.parse import urlsplit
 
 import yaml
+from ansible.parsing.vault import VaultLib, VaultSecret
 
 
 COLLECTION = Path(__file__).resolve().parents[1]
@@ -43,6 +44,18 @@ module = AnsibleModule(argument_spec={
 })
 module.exit_json(changed=False, updated=0)
 ''')
+        shutil.copytree(COLLECTION / "filter_plugins", self.collection / "filter_plugins")
+        shutil.copytree(COLLECTION / "roles/configure_student_aap", self.collection / "roles/configure_student_aap")
+        (library / "aia_aap_student.py").write_text('''from ansible.module_utils.basic import AnsibleModule
+m=AnsibleModule(argument_spec={
+ 'url':{'type':'str'},'username':{'type':'str'},'password':{'type':'str','no_log':True},
+ 'guid':{'type':'str'},'node':{'type':'dict','no_log':True},'validate_certs':{'type':'bool'},'rotate_credential':{'type':'bool'}})
+m.exit_json(changed=False,fqdn='rhel.sandbox-'+m.params['guid']+'.test.invalid')
+''')
+        self.source_password='synthetic-source-key'
+        (self.root / '.vault-password').write_text(self.source_password)
+        self.student_vaults={}
+        self.original_vault_plaintext=b'ctfd_flags: {custom: synthetic-student-edit}\n'
         shutil.copytree(COLLECTION / "roles/configure_student", self.collection / "roles/configure_student")
         shutil.copytree(COLLECTION / "roles/configure_devspaces", self.collection / "roles/configure_devspaces")
         modules = self.root / "collections/ansible_collections/kubernetes/core/plugins/modules"
@@ -91,6 +104,8 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
         self.forks.remove(("instructor-two", "ansible-survival-kit"))
         self.writes = []
         self.requests = []
+        for user in self.users:
+            self.student_vaults[user]=VaultLib([('default',VaultSecret(self.source_password.encode()))]).encrypt(self.original_vault_plaintext).decode()
         fixture = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -112,6 +127,13 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
                     fixture.forks.add((user, path[-2]))
                     fixture.writes.append((user, "fork"))
                     code = 202
+                elif "contents" in path and self.path.split('?')[0].endswith('/roles/ctfd/vars/flags.yml'):
+                    if self.command == 'GET':
+                        data={'sha':'vault-sha','content':base64.b64encode(fixture.student_vaults[user].encode()).decode()}
+                    elif self.command == 'PUT' and body.get('sha')=='vault-sha':
+                        fixture.student_vaults[user]=base64.b64decode(body['content']).decode()
+                        fixture.writes.append((user,'vault'))
+                    else:code=409
                 elif "contents" in path:
                     if self.command == "GET":
                         if user in fixture.guides:
@@ -153,7 +175,9 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
             hosts[user] = {
                 "guid": guid, "gitea_url": self.url, "gitea_username": user, "gitea_password": password,
                 "ctfd_admin_username": "admin", "ctfd_admin_password": password,
-                "student_name": "lab-user", "instructor": {"name": user},
+                "student_name": "lab-user", "common_password": password, "aia_lab_password": password,
+                "aap_password": password, "aia_managed_node": {"host":"ssh.example.test","port":30222,"username":"lab-user","password":password},
+                "instructor": {"name": user},
                 "aia_student": {"guid": guid, "ctfd_username": "lab-user", "ctfd_url": f"https://ctfd-{guid}.example.test",
                                 "gitea_url": self.url, "aap_url": "https://aap.example.test", "aap_username": user,
                                 "devspaces_url": "https://devspaces.example.test", "managed_node": "rhel"},
@@ -185,10 +209,15 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
             other = next(name for name in self.users if name != user)
             self.assertNotIn(other, content)
             self.assertNotIn(self.users[user], content)
+        for user,password in self.users.items():
+            plain=VaultLib([('default',VaultSecret(password.encode()))]).decrypt(self.student_vaults[user])
+            self.assertEqual(plain,self.original_vault_plaintext)
+        vaults=dict(self.student_vaults)
         writes = list(self.writes)
         rc, output = self.run_playbook()
         self.assertEqual(rc, 0, output)
         self.assertEqual(self.writes, writes)
+        self.assertEqual(self.student_vaults,vaults)
 
     def test_missing_event_flag_stops_before_any_service_request(self):
         self.flags.write_text("ctfd_flags: {}\n")
@@ -215,6 +244,16 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
                 self.assertNotEqual(rc, 0, output)
                 self.assertIn("post-deploy does not patch Dev Spaces", output)
                 self.assertEqual(self.requests, [])
+
+    def test_access_tag_cannot_touch_ctfd_or_workspace_policy(self):
+        tasks=self.collection/'roles/instructor_config/tasks'
+        for filename in ('oc_login.yml','ctfd_config.yml'):
+            (tasks/filename).write_text('- ansible.builtin.fail: {msg: "CTFd must not run during access-only updates"}\n')
+        (self.collection/'library/aia_ctfd_flags.py').write_text('from ansible.module_utils.basic import AnsibleModule\nAnsibleModule(argument_spec={}, bypass_checks=True).fail_json(msg="CTFd flags must not run")\n')
+        rc,output=self.run_playbook('--tags','student_access')
+        self.assertEqual(rc,0,output)
+        self.assertEqual(len(self.guides),2)
+        self.assertFalse(self.k8s_reads.exists())
 
     def test_devspaces_validation_needs_no_flags_or_student_service_calls(self):
         self.flags.unlink()

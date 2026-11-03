@@ -168,8 +168,8 @@ New leaderboard deployments configure two running Dev Spaces workspaces per inst
 . You will receive:
 ** *Personal OpenShift access* — use the console to copy your instructor `oc login` command
 ** *Participant service accounts and lab password* — in the student service details
-** *Instructor vault password* — supplied privately by the organizer for encrypted challenge answers
-. Before starting this lab, the organizer runs the event post-deploy playbook against the deployed students with the private event vault password. It validates the leaderboard's Dev Spaces policy, verifies the learners' repositories, loads the 25 base challenges and real flags, and writes an `ISLAND_ACCESS.md` guide in each instructor repository. This content step is still separate from student CI provisioning.
+** *Instructor vault password* — your provisioned lab password also unlocks your instructor repository's encrypted challenge answers
+. Before starting this lab, the organizer runs the event post-deploy playbook against the deployed students with the private event vault password. It validates the leaderboard's Dev Spaces policy, verifies the learners' repositories, loads the 25 base challenges and real flags, re-keys each instructor answer vault with that learner's provisioned lab password, creates their AAP inventory and Machine credential, and writes an `ISLAND_ACCESS.md` guide in each instructor repository. This content step is still separate from student CI provisioning.
 . Verify student and administrator CTFd logins, challenge availability, the rendered Showroom service links, and both Dev Spaces repository workspaces before distributing access.
 
 Instructors need only their personal OpenShift login and local vault password to run the toolkit. Keep the leaderboard administrator credentials with the organizer.

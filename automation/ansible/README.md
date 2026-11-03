@@ -42,8 +42,8 @@ ansible-playbook configure_ctfd.yml \
 ```
 
 Install `ansible-core`, the `kubernetes.core` and `community.general`
-collections, Python `kubernetes`, `requests`, and `PyYAML`, and GNU coreutils `timeout` on
-the control host. The playbook prepares `oc` using the role's existing CLI
+collections, Python `kubernetes`, `requests`, `paramiko`, and `PyYAML`, and GNU
+coreutils `timeout` on the control host. The playbook prepares `oc` using the role's existing CLI
 installation/login tasks; the automatic installation requires sudo if `oc`
 is missing. The interpreter override selects your local Python instead of
 the role's provisioning-image default `/usr/bin/python3.11`.
@@ -182,6 +182,44 @@ only `aia-instructor/ISLAND_ACCESS.md`, with service links and account names.
 Existing learner work is preserved. No passwords or answers are written to
 Gitea. An unchanged guide produces no Git commit on rerun.
 
+Before repository configuration, the playbook connects to each VM using the
+student CI's published SSH endpoint, reads `hostname -f`, verifies the GUID and
+passwordless sudo, then configures AAP using that instructor's own account:
+
+- Inventory **Island Adventure**, scoped to `instructor-<guid>`'s organization.
+- Host `rhel`, using the published SSH hostname/port; its private VM FQDN is
+  recorded as `aia_managed_node_fqdn`. The host belongs to group `web`.
+- Host `localhost` with local connection for Hello World/Secret Message.
+- Machine credential **Managed Node SSH**, storing the published SSH password
+  in AAP, with sudo/root escalation. No password is put in host variables.
+
+Other inventories, projects, credentials, and templates are retained. Existing
+managed Machine credential secrets are not rewritten on rerun; explicitly set
+`aia_rotate_machine_credential=true` after a published SSH password rotation.
+Module 4 selects this inventory and Machine credential for the Apache template.
+The VM FQDN belongs to its infrastructure cluster, so the lab fetches the web
+page through the published SSH endpoint instead of assuming direct HTTP routing.
+
+The instructor answer vault in each Gitea fork is re-keyed in memory with
+`aia_lab_password` (the CI's published `password` field). The filter first tries
+that key and returns existing ciphertext unchanged when it already works. On
+initial setup it uses `aia_instructor_vault_source_password`, defaulting to a
+private file selected by `aia_instructor_vault_password_file` (repository-root
+`.vault-password`). Supply that secret explicitly from RHDP's private mechanism
+when integrating into a CI. Only the existing file's ciphertext is committed,
+with its Git SHA as a concurrency guard; student edits/answers are retained.
+No decrypted answer file or workspace password file is written. The organizer's
+source vault and survival-kit challenge vaults retain their original keys.
+
+For access-only updates that leave CTFd accounts/content/scores untouched, run:
+
+```bash
+ansible-playbook -i ../../.aia-dev/runs/<run-id>.students.inventory.json \
+  post_deploy.yml --tags student_access --vault-password-file ../../.vault-password
+```
+
+The regular event preflight still runs. Use `--tags aap` for just the AAP step.
+
 The playbook adds the student's repository link to relevant CTFd challenge
 descriptions and invokes the retained empty-board content loader. It then
 reconciles flag values through CTFd's API, patching existing flag IDs only when
@@ -192,14 +230,14 @@ boards are preserved, including submissions and scores. Existing challenge
 descriptions, points, hints, and prerequisites are not updated in place by this
 entry point. It keeps the existing
 `lab-user` CTFd account and `instructor-<guid>` Gitea account, and presents their
-mapping in the access guide. It does not create AAP projects, job templates,
-inventories, or credentials. Those resources remain separate from this CTFd/
-Gitea configuration step.
+mapping in the access guide. It does not create AAP projects or job templates. Managed-node inventories and
+Machine credentials are configured as described below.
 
 ## Instructor playbooks without credential exports
 
 The upstream `l3acon/aia-instructor` root playbooks use the instructor's current
-`oc login` and a local vault password. They derive `instructor-<guid>-ctfd` from
+`oc login` and their provisioned lab password in a local vault password file.
+They derive `instructor-<guid>-ctfd` from
 `oc whoami`, validate its `island` route, and run the CTFd 3.7.7 content runner
 inside `deploy/ctfd` using namespaced `pods/exec` access. `namespaces.yml` already
 binds the instructor to the `admin` ClusterRole in that personal namespace, so
@@ -211,7 +249,8 @@ Secret. The shared Gitea namespace remains restricted.
 passwords, branding, and settings. Both retain challenges absent from YAML;
 hide unwanted challenges explicitly. `--check` rolls back the content transaction.
 The handout generator lists service links and existing usernames; distribute
-the provisioned lab password separately. No random player accounts are created.
+the provisioned lab password separately. That same password unlocks the
+instructor clone's re-keyed answer vault. No random player accounts are created.
 
 Organizer post-deploy still uses the private exported inventory and event vault.
 Those control-host inputs are not learner inputs and must not be distributed.
@@ -238,7 +277,8 @@ Before enabling that integration:
   explicitly unlocked event vault. A collection install does not include the
   root `ansible-testing/vars` files used by this local playbook. Package the
   challenge definitions and make the flag input explicit before moving it.
-  Never publish a vault password or decrypted answers to Gitea or Showroom.
+  Never publish the organizer's source vault key or decrypted answers to Gitea
+  or Showroom. Student Gitea answer vaults use the published lab password.
 - Include `oc`, `timeout`, the Python/Ansible dependencies above, and the
   required Kubernetes access in the execution environment. Use collection
   qualified role and module names once installed.

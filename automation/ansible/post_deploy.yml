@@ -20,6 +20,10 @@
           - aia_student.ctfd_url is match('^https://')
           - aia_student.gitea_url == gitea_url
           - aia_kubeconfig is defined
+          - aia_lab_password | length > 0
+          - aap_password | length > 0
+          - aia_managed_node.host | length > 0
+          - aia_managed_node.password | length > 0
         fail_msg: Export the deployed students with utils/dev-environment.py export-students first.
 
     - name: Validate the requested verifier integration
@@ -64,9 +68,19 @@
   environment:
     KUBECONFIG: "{{ aia_kubeconfig }}"
   tasks:
+    - name: Configure each instructor's AAP managed-node access
+      tags: [student_access, aap]
+      ansible.builtin.include_role:
+        name: configure_student_aap
+        apply:
+          tags: [student_access, aap]
+
     - name: Configure and verify student Gitea repositories
+      tags: [student_access]
       ansible.builtin.include_role:
         name: configure_student
+        apply:
+          tags: [student_access]
 
     - name: Prepare OpenShift access for CTFd content loading
       ansible.builtin.include_role:

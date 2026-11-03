@@ -22,10 +22,31 @@ Managed node: `{{ aia_student.managed_node }}`.
 ## Instructor toolkit setup
 
 In the `aia-instructor` Dev Spaces terminal, run your personal `oc login` command
-from the OpenShift console and create `.vault-password` with the organizer's
-vault password (mode `0600`). These are the only instructor inputs.
+from the OpenShift console and create `.vault-password` with your
+provisioned lab password (mode `0600`). These are the only instructor inputs.
 
 `update-challenges.yml` discovers your personal CTFd board and updates content
 while retaining solves. `deploy.yml` resets your board's challenge progress;
 use it only before playing. Both retain the provisioned accounts and passwords.
 The shared `gitea` namespace is restricted; use the Gitea web interface above.
+
+## Managed node in AAP
+
+Open **Automation Execution → Infrastructure → Inventories → Island Adventure**.
+The `web` group contains your `rhel` host. Its variables include the discovered
+VM FQDN and the published SSH endpoint/port. Use the **Managed Node SSH** Machine
+credential in your Apache job template; passwords stay in AAP's credential store.
+
+- VM FQDN: `{{ aia_aap_access.fqdn }}`
+- SSH endpoint: `{{ aia_managed_node.host }}:{{ aia_managed_node.port }}`
+- SSH username: `{{ aia_managed_node.username }}`
+
+The VM's private FQDN belongs to its infrastructure cluster. To fetch the Apache
+page from Dev Spaces, use the published SSH endpoint:
+
+```bash
+ssh -p {{ aia_managed_node.port }} {{ aia_managed_node.username }}@{{ aia_managed_node.host }} 'curl -fsS http://127.0.0.1/'
+```
+
+The instructor `flags.yml` uses your provisioned lab password. Challenge vaults
+in `ansible-survival-kit` retain their documented passphrases, including `AAP`.

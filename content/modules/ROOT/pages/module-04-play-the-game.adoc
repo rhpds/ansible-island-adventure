@@ -173,6 +173,15 @@ ansible-vault view message-in-a-bottle.txt --ask-vault-pass
 
 These challenges use the *Ansible Automation Platform Controller* to orchestrate automation.
 
+=== Inspect Your Managed Node in AAP
+
+. Open *Automation Execution → Infrastructure → Inventories → Island Adventure* in your AAP organization.
+. Under *Hosts*, open `rhel` and review its variables. `aia_managed_node_fqdn` records the VM's actual FQDN; `ansible_host` and `ansible_port` identify the published SSH endpoint that AAP can reach.
+. Under *Groups*, open `web` and confirm that `rhel` is a member. The Apache playbook targets this group.
+. Open *Automation Execution → Infrastructure → Credentials* and locate *Managed Node SSH*. This Machine credential supplies the VM's SSH username/password and sudo settings; the password is masked in AAP.
+
+The inventory also contains `localhost` for the controller-local exercises below. Use *Island Adventure* for all three job templates. If the inventory, `web` membership, or Machine credential is missing, ask the organizer to rerun student access configuration before continuing.
+
 === Hello World Treasure Hunt
 
 . In the AAP Controller ({aap_url}), go to *Automation Execution → Projects*.
@@ -186,7 +195,7 @@ These challenges use the *Ansible Automation Platform Controller* to orchestrate
 * *Name:* `Hello World`
 * *Project:* `ansible-survival-kit`
 * *Playbook:* `hello-world.yml`
-* *Inventory:* Select an existing inventory (or create one with `localhost`)
+* *Inventory:* `Island Adventure`
 . Launch the job and find the keyword in the output.
 . Submit the keyword as your flag.
 
@@ -201,7 +210,8 @@ These challenges use the *Ansible Automation Platform Controller* to orchestrate
 * *Name:* `Secret Message`
 * *Project:* `ansible-survival-kit`
 * *Playbook:* `secret-word.yml`
-* *Credentials:* Add both the *Vault Credential* you just created and any required machine credential
+* *Inventory:* `Island Adventure`
+* *Credentials:* Add the *Vault Credential* you just created. This playbook runs on `localhost` and does not need a Machine credential.
 . Launch the job and find the secret message in the output.
 . Submit the secret message as your flag.
 
@@ -211,15 +221,15 @@ These challenges use the *Ansible Automation Platform Controller* to orchestrate
 * *Name:* `Deploy Web Server`
 * *Project:* `ansible-survival-kit`
 * *Playbook:* `apache/apache_role_install.yml`
-* *Inventory:* Your instructor inventory
-* *Credentials:* Add both the *Machine Credential* and the *Vault Credential*
+* *Inventory:* `Island Adventure`
+* *Credentials:* Add *Managed Node SSH* and the *Vault Credential* (passphrase `AAP`)
 * *Enable Privilege Escalation:* Check this option
 . Launch the job and wait for it to complete.
-. Use `curl` from your Dev Spaces terminal to access the web page on your managed node:
+. Fetch the web page through your VM's published SSH endpoint from the Dev Spaces terminal. Its private FQDN belongs to a different infrastructure cluster, so a direct `curl http://rhel` will not reach it. Use your provisioned lab password if SSH prompts for authentication:
 +
 [source,bash,subs="attributes"]
 ----
-curl http://{managed_node}
+ssh -p {bastion_ssh_port} {bastion_ssh_user_name}@{bastion_public_hostname} 'curl -fsS http://127.0.0.1/'
 ----
 +
 . Find the treasure keyword in the response and submit it as your flag.

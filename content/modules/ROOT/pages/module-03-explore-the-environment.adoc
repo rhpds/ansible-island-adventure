@@ -71,7 +71,7 @@ ansible-navigator --version
 
 === Configure Your Vault Password
 
-Your organizer supplies the vault password for the encrypted files in your instructor repository. It is separate from your OpenShift login token and your service login password.
+Your instructor repository's encrypted `roles/ctfd/vars/flags.yml` uses *your provisioned lab password*, the same password shown in your service access details. It is separate from your OpenShift login token.
 
 In the workspace terminal, prepare the password file:
 
@@ -82,7 +82,7 @@ umask 077
 vim .vault-password
 ----
 
-Enter only the organizer-provided password on one line, then save and exit. Verify it:
+Enter only your provisioned lab password on one line, then save and exit. Verify it:
 
 [source,bash]
 ----

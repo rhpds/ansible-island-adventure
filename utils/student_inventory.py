@@ -26,6 +26,20 @@ def endpoint(data, key):
     return value
 
 
+def managed_node_access(data):
+    host = required(data, 'bastion_public_hostname')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.-]*', host):
+        raise ValueError('Student provision data has an invalid SSH hostname')
+    try:
+        port = int(data['bastion_ssh_port'])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError('Student provision data is missing a valid bastion_ssh_port') from None
+    if not 1 <= port <= 65535:
+        raise ValueError('Student SSH port must be between 1 and 65535')
+    return {'host': host, 'port': port, 'username': required(data, 'bastion_ssh_user_name'),
+            'password': required(data, 'bastion_ssh_password')}
+
+
 def kubeconfig_from_claim(claim):
     """Build the private control-host kubeconfig from the refreshed leaderboard."""
     data = extract_provision_data(claim)
@@ -76,6 +90,9 @@ def inventory_from_claims(run, claims, kubeconfig):
             "instructor": {"name": username, "ctfd_ns": username + "-ctfd", "lab_ns": username + "-lab",
                            "password": required(data, "gitea_password")},
             "common_password": required(data, "ctfd_student_password"),
+            "aia_lab_password": required(data, "password"),
+            "aap_password": required(data, "aap_password"),
+            "aia_managed_node": managed_node_access(data),
             "student_name": required(data, "ctfd_student_username"),
             "ctfd_admin_username": required(data, "ctfd_admin_username"),
             "ctfd_admin_password": required(data, "ctfd_admin_password"),

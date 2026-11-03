@@ -23,6 +23,9 @@
     loop_var: aia_repository
     label: "{{ gitea_username }}/{{ aia_repository.name }}"
 
+- name: Use the student's lab password for instructor answers
+  ansible.builtin.include_tasks: vault.yml
+
 - name: Render the student's access guide
   ansible.builtin.set_fact:
     _aia_access_guide: "{{ lookup('template', 'ISLAND_ACCESS.md.j2') }}"

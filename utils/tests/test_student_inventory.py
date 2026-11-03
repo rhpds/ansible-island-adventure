@@ -34,7 +34,9 @@ class InventoryTests(unittest.TestCase):
                          gitea_password=secrets.token_hex(12), ctfd_admin_username="admin",
                          ctfd_admin_password=secrets.token_hex(12), ctfd_student_username="lab-user",
                          ctfd_student_password=secrets.token_hex(12), aap_username="instructor-" + guid,
-                         managed_node="rhel")
+                         managed_node="rhel", password=secrets.token_hex(12), aap_password=secrets.token_hex(12),
+                         bastion_public_hostname=f'ssh-{guid}.example.test', bastion_ssh_port='30222',
+                         bastion_ssh_user_name='lab-user', bastion_ssh_password=secrets.token_hex(12))
                 claim["status"]["resourceHandle"] = {"name": "guid-" + guid}
             self.claims[role] = claim
 
@@ -79,6 +81,19 @@ class InventoryTests(unittest.TestCase):
         self.run["workshop"]["user_count"] = 2
         del self.claims["student-1"]["status"]["summary"]["provision_data"]["ctfd_admin_password"]
         with self.assertRaisesRegex(ValueError, "ctfd_admin_password"):
+            self.inventory()
+
+    def test_private_managed_node_access_uses_published_endpoint_and_port(self):
+        hosts=self.inventory()['all']['children']['aia_students']['hosts']
+        host=hosts['instructor-first']
+        self.assertEqual(host['aia_managed_node']['host'],'ssh-first.example.test')
+        self.assertEqual(host['aia_managed_node']['port'],30222)
+        data=self.claims['student-1']['status']['summary']['provision_data']
+        self.assertEqual(host['aia_lab_password'],data['password'])
+        self.assertEqual(host['aap_password'],data['aap_password'])
+        self.assertNotIn('aia_managed_node',host['aia_student'])
+        data['bastion_ssh_port']='70000'
+        with self.assertRaisesRegex(ValueError,'SSH port'):
             self.inventory()
 
     def test_control_host_kubeconfig_uses_leaderboard_token_and_ca(self):
