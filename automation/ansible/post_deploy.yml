@@ -51,12 +51,10 @@
       loop: "{{ aia_event_challenges | map(attribute='flags') | flatten }}"
       no_log: true
 
-# TODO(devspaces-ci-bootstrap): Remove this automatic workaround after core_workloads
-# exposes pvc_strategy and the leaderboard AgnosticV CI provisions 2/per-workspace.
-# Verify on a fresh leaderboard before removing; keep standalone repair for old CIs.
-# Tracking: rhpds/core_workloads#197 and rhpds/agnosticv#28869.
-- name: Configure the shared leaderboard Dev Spaces policy
-  ansible.builtin.import_playbook: configure_devspaces.yml
+# The leaderboard CI owns this cluster-wide policy (core_workloads#197,
+# agnosticv#28869). Validate it without hiding provisioning regressions.
+- name: Validate the shared leaderboard Dev Spaces policy
+  ansible.builtin.import_playbook: validate_devspaces.yml
 
 - name: Connect each student CTFd board to its Gitea repositories
   hosts: aia_students

@@ -284,9 +284,11 @@ python utils/dev-environment.py export-students
 
 The exporter writes both the private inventory and its token/CA kubeconfig.
 Then run `automation/ansible/post_deploy.yml` using that inventory and the local
-event vault password file, as described in the collection README. The temporary
-Dev Spaces workaround remains necessary until the upstream provisioning PRs
-are deployed and verified.
+event vault password file, as described in the collection README. The merged
+leaderboard CI now supplies two concurrent Dev Spaces workspaces with separate
+storage. Post-deploy validates that policy without changing it; use
+`automation/ansible/validate_devspaces.yml` for a standalone acceptance check.
+Older deployments can be repaired explicitly with `configure_devspaces.yml`.
 
 Run offline tests without SSO or catalog orders:
 

@@ -8,7 +8,7 @@ Catalog workload roles live in this directory:
 
 - `roles/instructor_config/` — Instructor services and access, including CTFd bootstrap, Gitea, AAP, and Keycloak integration
 - `roles/keycloak_ocp_logout_fix/` — Keycloak/OpenShift logout configuration
-- `roles/configure_devspaces/` — Shared leaderboard workspace limits and persistent storage policy, applied by post-deploy
+- `roles/configure_devspaces/` — Read-only validation of the leaderboard CI's workspace policy, plus standalone repair for older deployments
 
 The project root also retains `ansible-testing/` playbooks and the
 `collections/ansible_collections/rhpds/aia/` collection for local role development.
@@ -87,7 +87,7 @@ The deployment sequence has three responsibilities: the leaderboard CI creates
 the shared cluster and Dev Spaces service; the student CI integrates with that
 leaderboard and creates the requested student accounts and resources; this
 post-deploy playbook applies iterated configuration to those existing resources.
-No new CI orders or deployments are needed to change the workspace policy.
+The leaderboard CI owns the shared Dev Spaces workspace and storage policy.
 
 `post_deploy.yml` connects each already deployed student CI's CTFd instance and
 Gitea account. It uses the real definitions in
@@ -101,27 +101,26 @@ name. The repository-name and main-branch Hello World answers were also correcte
 to match the current student Gitea content. The vault password is supplied
 separately; `.vault-password` is gitignored.
 
-After validating all student mappings and flags, post-deploy configures Dev
+After validating all student mappings and flags, post-deploy checks Dev
 Spaces once for the shared leaderboard cluster, before its serial student
-configuration. Each instructor can run two simultaneous workspaces, with
+configuration. The leaderboard CI must supply at least two saved and running
+workspaces per instructor, with
 `per-workspace` persistent storage. Separate PVCs prevent the cross-node
 `Multi-Attach` failures caused by sharing a ReadWriteOnce per-user volume.
 The exported inventory represents one leaderboard; do not combine students
 from different leaderboard clusters into it.
 
-`TODO(devspaces-ci-bootstrap)`: this Dev Spaces step is a temporary compatibility
-workaround. Remove the automatic `configure_devspaces.yml` import from
-`post_deploy.yml` after the shared `core_workloads` role exposes PVC strategy,
-the leaderboard AgnosticV CI sets two running workspaces and `per-workspace`
-storage, and a fresh leaderboard deployment is verified before post-deploy runs.
-Verification must include two simultaneous workspaces for one instructor with
-separate bound PVCs. Keep the standalone repair entry point while older
-deployments still need it. The student CI does not need this cluster-wide setting.
-To bypass the workaround during validation of the new CI defaults, use
-`--skip-tags devspaces_ci_workaround` with `post_deploy.yml`.
-Track the upstream feature in [core_workloads#197](https://github.com/rhpds/core_workloads/pull/197)
-and the dependent leaderboard configuration in
-[agnosticv#28869](https://github.com/rhpds/agnosticv/pull/28869).
+The provisioning feature merged in [core_workloads#197](https://github.com/rhpds/core_workloads/pull/197)
+and [agnosticv#28869](https://github.com/rhpds/agnosticv/pull/28869).
+`post_deploy.yml` imports the read-only `validate_devspaces.yml`; it never patches
+the CheCluster. A stale catalog or collection version fails validation before
+student service changes. The former `devspaces_ci_workaround` skip tag is no
+longer needed. Keep this cluster-wide policy in the leaderboard CI when moving
+student configuration into provisioning.
+
+For a fresh-CI acceptance check, export the inventory and run
+`validate_devspaces.yml` before the full post-deploy playbook. Then confirm that
+one instructor can run two simultaneous workspaces with separate bound PVCs.
 
 From the repository root, using the development virtual environment:
 
@@ -142,19 +141,19 @@ CTFd URL, and Gitea owner before writing an inventory with mode `0600` under
 CTFd and Gitea usernames, and records the Python interpreter used for export.
 It places no orders. The generated kubeconfig is also kept under `.aia-dev/`.
 
-To iterate on Dev Spaces alone, use the same exported inventory:
+To validate Dev Spaces alone, use the same exported inventory:
 
 ```bash
 cd automation/ansible
 ansible-playbook -i ../../.aia-dev/runs/<run-id>.students.inventory.json \
-  configure_devspaces.yml
+  validate_devspaces.yml
 ```
 
-This entry point needs no event vault and does not configure Gitea or CTFd.
-Override `aia_devspaces_running_workspaces_per_user` (default `2`) if needed;
-the policy uses `aia_devspaces_pvc_strategy: per-workspace`. It patches the
-existing CheCluster without recreating the service. The current cluster's
-total saved-workspace limit is already two, so it accommodates both workspaces.
+This entry point needs no event vault and does not change any resources.
+For an older leaderboard, explicitly run `configure_devspaces.yml` with the
+same inventory to repair its workspace policy, then rerun validation.
+The repair entry point patches the existing CheCluster without recreating it.
+It assumes the saved-workspace limit already accommodates two workspaces.
 
 The storage default applies to newly created workspaces. Existing per-user
 workspaces and their PVCs are left intact; save or back up uncommitted work and
@@ -189,6 +188,39 @@ entry point. It keeps the existing
 mapping in the access guide. It does not create AAP projects, job templates,
 inventories, or credentials. Those resources remain separate from this CTFd/
 Gitea configuration step.
+
+## Moving post-deploy into the student CI
+
+The current student CI installs this directory as the
+`ansible_island_adventure.automation` collection and invokes
+`instructor_config` in `post_software_workloads`. That role still bootstraps an
+empty CTFd board. Merging the Dev Spaces feature does not enable challenge
+loading in the student CI; keep running post-deploy during this test phase.
+
+Before enabling that integration:
+
+- Adapt the per-student inputs from provisioned workload variables, rather than
+  running the RHDP catalog exporter inside the CI. Validate GUID, repository
+  owner, service URLs, and the distinct CTFd/Gitea usernames as post-deploy does.
+- Run student content configuration after CTFd, Gitea forks, accounts, and
+  service credentials are ready. Reuse the collection roles and flag module;
+  keep the leaderboard's workspace policy in leaderboard provisioning.
+- Supply real event flags through RHDP's private secret mechanism or an
+  explicitly unlocked event vault. A collection install does not include the
+  root `ansible-testing/vars` files used by this local playbook. Package the
+  challenge definitions and make the flag input explicit before moving it.
+  Never publish a vault password or decrypted answers to Gitea or Showroom.
+- Include `oc`, `timeout`, the Python/Ansible dependencies above, and the
+  required Kubernetes access in the execution environment. Use collection
+  qualified role and module names once installed.
+- Test initial provisioning, rerun, and failure recovery: 25 challenges with
+  real flags, usable student/admin logins, correct repository links and
+  devfiles, and preserved learner commits, solves, scores, and account access.
+
+For the main-event review, walk through the deployed Showroom Modules 03–05
+using a student's published credentials, start both repository workspaces,
+verify the Ansible utilities, and complete representative base and treasure-hunt
+challenges before enabling the CI integration.
 
 Run the offline CTFd regression tests with `ansible-playbook`, GNU coreutils
 `timeout`, PyYAML, and Jinja2 installed:

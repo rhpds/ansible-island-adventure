@@ -37,7 +37,7 @@ Use `{ctfd_admin_username}` when you need to manage your CTFd instance as the fa
 
 For this module, use your *`ansible-survival-kit`* repository. The `aia-instructor` workspace from Module 3 is for managing the event; the survival kit contains the participant challenge playbooks.
 
-. Save your work in the instructor workspace. After the event organizer has run the post-deploy configuration, you can keep *two workspaces running*: the instructor toolkit and the survival kit, each with its own persistent storage.
+. Save your work in the instructor workspace. The lab supports *two workspaces running* together: the instructor toolkit and the survival kit, each with its own persistent storage. New leaderboard deployments configure this automatically. If an older environment only allows one, ask the event organizer to update its Dev Spaces policy.
 . If your instructor workspace predates that configuration and still uses shared per-user storage, stop it and wait until it shows *Stopped* before continuing. Back up local changes before recreating an older workspace; changing the storage setting does not move its files.
 . Open Gitea at {gitea_url} and sign in as `{gitea_username}` with your provisioned lab password.
 . Open *your own* `ansible-survival-kit` repository and select the *`main`* branch.

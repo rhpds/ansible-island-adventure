@@ -1,10 +1,8 @@
 ---
 # The exported inventory describes students on one shared leaderboard cluster.
 # Keep this cluster-wide configuration outside the per-student serial play.
-# TODO(devspaces-ci-bootstrap): Temporary compatibility path until the leaderboard
-# CI provisions two running workspaces and per-workspace storage from scratch.
-# Remove the automatic post_deploy import after fresh-CI validation; retain this
-# entry point while older leaderboard deployments still need the repair.
+# Standalone repair for older leaderboard deployments only. New CIs own this
+# configuration; post_deploy imports the read-only validate_devspaces.yml instead.
 # Tracking: https://github.com/rhpds/core_workloads/pull/197
 #           https://github.com/rhpds/agnosticv/pull/28869
 - name: Configure shared Dev Spaces on the existing leaderboard cluster
