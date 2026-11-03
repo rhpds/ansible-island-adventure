@@ -47,7 +47,7 @@ For this module, use your *`ansible-survival-kit`* repository. The `aia-instruct
 ----
 {gitea_url}/{gitea_username}/ansible-survival-kit.git
 ----
-. Open {devspaces_url}, choose *Create Workspace*, and paste that URL. Use the repository's `.devfile.yaml` and select *Trust this repository* when prompted. If Git requests credentials, use your Gitea account.
+. Open {devspaces_url}, choose *Create Workspace*, and paste that URL. Leave *Temporary Storage* off and select *Create & Open*. Use the repository's `.devfile.yaml`. When asked "Do you trust the authors of this repository?", select *Continue*. If Git requests credentials, use your Gitea account.
 . Wait for the editor and the *Install lab collections* startup task to finish. The devfile supplies Ansible, Lint, Navigator, and related tools; keep it rather than selecting the default devfile.
 . Open *Terminal → New Terminal* and check the repository and tools:
 +

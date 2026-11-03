@@ -51,8 +51,8 @@ include::partial$service-access.adoc[]
 ----
 {gitea_url}/{gitea_username}/aia-instructor.git
 ----
-. Open {devspaces_url}, select *Create Workspace*, and paste that HTTPS URL.
-. Use the repository's `.devfile.yaml` and trust the repository when prompted. Wait for the editor and any collection-installation startup task to finish. The devfile supplies Ansible, Lint, Navigator, and related utilities.
+. Open {devspaces_url} and select *Log in with OpenShift* if prompted. Use your instructor account and allow the Dev Spaces access request. Select *Create Workspace* and paste that HTTPS URL.
+. Leave *Temporary Storage* off and select *Create & Open*. Use the repository's `.devfile.yaml`. When asked "Do you trust the authors of this repository?", select *Continue*. Wait for the editor and any collection-installation startup task to finish. The devfile supplies Ansible, Lint, Navigator, and related utilities.
 . If Git requests authentication, use `{gitea_username}` and your provisioned lab password.
 . Open *Terminal → New Terminal* and verify the tools:
 +
