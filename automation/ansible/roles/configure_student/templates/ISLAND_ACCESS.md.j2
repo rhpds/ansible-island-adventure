@@ -18,3 +18,14 @@ Credentials are available in your RHDP service access details.
 - [Instructor toolkit]({{ gitea_url }}/{{ gitea_username }}/aia-instructor)
 
 Managed node: `{{ aia_student.managed_node }}`.
+
+## Instructor toolkit setup
+
+In the `aia-instructor` Dev Spaces terminal, run your personal `oc login` command
+from the OpenShift console and create `.vault-password` with the organizer's
+vault password (mode `0600`). These are the only instructor inputs.
+
+`update-challenges.yml` discovers your personal CTFd board and updates content
+while retaining solves. `deploy.yml` resets your board's challenge progress;
+use it only before playing. Both retain the provisioned accounts and passwords.
+The shared `gitea` namespace is restricted; use the Gitea web interface above.

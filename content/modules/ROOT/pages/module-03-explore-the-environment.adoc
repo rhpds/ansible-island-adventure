@@ -3,7 +3,7 @@
 
 == Architecture Tour on OpenShift
 
-Your environment is fully deployed on a shared OpenShift cluster. Each learner has a personal CTFd instance for this facilitator-training lab.
+Each learner has a personal CTFd instance for this facilitator-training lab.
 
 === Log into the OpenShift Console
 
@@ -25,6 +25,11 @@ From *Workloads → Pods*, explore the services visible to your account:
 | *Dev Spaces* | `openshift-devspaces` (platform); your user workspace namespace | IDE and workspace containers
 | *Managed Node VM* | Student environment | RHEL 9 VM for Ansible challenges, provisioned separately
 |===
+
+[NOTE]
+====
+The shared `gitea` namespace is restricted to platform administrators. It is normal for your instructor account to receive "Forbidden" or not see this namespace. Access your repositories through the Gitea web interface below. Other shared platform namespaces may also be hidden; inspect your own `{keycloak_username}-ctfd` namespace for CTFd pods.
+====
 
 === Verify Service Access
 
@@ -87,43 +92,29 @@ ansible-vault view roles/ctfd/vars/flags.yml
 
 The instructor devfile sets `ANSIBLE_VAULT_PASSWORD_FILE` to `/projects/aia-instructor/.vault-password`. Keep this file local to your workspace; never commit it or include it in an image. A newly created workspace may require this setup again.
 
+If you are resuming an existing instructor workspace after an organizer update, save your edits and run `git pull --ff-only` in `/projects/aia-instructor` to fetch the current toolkit before continuing.
+
 == Deployment Artifacts Walkthrough
 
-Open *`deploy.yml` at the root of your Gitea `aia-instructor` repository*. Explore its pre-tasks and follow the `ctfd` and `verifier` roles:
+Open *`deploy.yml` at the root of your Gitea `aia-instructor` repository*. Follow its shared tasks and content runner:
 
 [source,text]
 ----
 aia-instructor/
-  ├── deploy.yml                  → Full deployment and CTFd archive import
-  ├── update-challenges.yml       → Update challenge content through the CTFd API
-  ├── generate-handouts.yml       → Generate participant handouts
-  └── roles/
-      ├── ctfd/
-      │   ├── tasks/              → Infrastructure, players, archive, and upload tasks
-      │   └── vars/
-      │       ├── challenges.yml
-      │       ├── challenges_advanced.yml
-      │       └── flags.yml       → Vault-encrypted answers
-      └── verifier/               → Challenge verification service
+  ├── deploy.yml                  → Reset your board's challenge progress
+  ├── update-challenges.yml       → Update content while retaining progress
+  ├── generate-handouts.yml       → Generate service links and usernames
+  ├── tasks/
+  │   ├── discover.yml            → Find your board using oc whoami
+  │   └── content.yml             → Run content operations in your CTFd pod
+  ├── files/ctfd_content.py        → Validate and apply challenge definitions
+  └── roles/ctfd/vars/
+      ├── challenges.yml
+      ├── challenges_advanced.yml
+      └── flags.yml               → Vault-encrypted answers
 ----
 
-The shared platform was provisioned separately. The toolkit's `deploy.yml` does not represent every platform provisioning step; do not assume it installs AAP or Dev Spaces.
-
-The `ctfd` role deploys CTFd, MariaDB, and Redis; configures players and Gitea; and builds and imports a CTFd configuration archive. Some tasks also change cluster-wide configuration. The `verifier` role deploys the service that checks automation results on managed nodes.
-
-=== Deployment Input Files
-
-Review the input files named by the current toolkit. These are private inputs, not files to commit:
-
-[cols="1,3",options="header"]
-|===
-| File | Purpose
-| `rosa.creds` | Legacy resource-claim input expected by `deploy.yml` and `update-challenges.yml`. Their pre-tasks extract `rosa_openshift_*` fields and log in again.
-| `workshop.creds` | Workshop input expected by `deploy.yml` to obtain the player count.
-| `player.creds` | Cached player passwords and verification tokens, generated on the first run and reused on later runs.
-|===
-
-Reusing player credentials does *not* preserve CTFd scores when a configuration archive is restored. Encrypted answers are in `roles/ctfd/vars/flags.yml`. The managed node VM and SSH access are provisioned separately.
+The playbooks use your current `oc login` and local vault password. They discover your personal CTFd namespace from your instructor username and verify its route. They manage challenge content inside your CTFd pod using the permissions already assigned to your account. Infrastructure, accounts, passwords, and event settings are retained.
 
 === Verify the Playbook Before Playing
 
@@ -137,27 +128,26 @@ ansible-playbook deploy.yml --syntax-check
 
 [WARNING]
 ====
-A full `deploy.yml` run imports a CTFd configuration archive and *resets the target CTFd environment*. Existing scores, submissions, and progress are lost. Complete any approved deployment exercise *before Module 4*.
+Running `deploy.yml` clears *your board's solves, submissions, awards, and purchased hints*, then applies the challenge definitions. Accounts and passwords are retained. Complete this reset exercise *before Module 4*.
 ====
 
-The current upstream playbook expects legacy `rosa.creds` and `workshop.creds` inputs and can change cluster-wide resources. A personal `oc login` token alone does not make it ready for this shared training cluster. The facilitator must confirm an isolated target, compatible input files, permissions, and CTFd settings before you execute it. Do not substitute the shared leaderboard's administrator credentials.
-
-When the facilitator has supplied and verified that isolated deployment configuration, run from the repository root:
+Preview the reset, then apply it from the repository root:
 
 [source,bash]
 ----
+ansible-playbook deploy.yml --check
 ansible-playbook deploy.yml
 ----
 
-Confirm the run succeeds and the intended CTFd board is accessible before Module 4. If compatible inputs and an isolated target have not been supplied, complete the syntax check and artifact review only; full deployment verification remains blocked until the toolkit is adapted for this training environment.
+Check that the reported username and CTFd URL match your own board. Confirm the playbook succeeds and your challenges are available before Module 4. If discovery fails, check `oc whoami` and refresh your personal login token; contact the organizer if your namespace or CTFd pod is missing.
 
 == Preparing a Customer Event
 
-Arrange a pre-deployed environment with adequate lead time, verify service access and challenge content, then distribute participant handouts. Normally participants share the customer event's CTFd board; the separate boards in this training lab let learners practice customization independently.
+Allow adequate provisioning lead time, verify service access and challenge content, then distribute participant handouts. Normally participants share the customer event's CTFd board; the separate boards in this training lab let learners practice customization independently.
 
 == Key Takeaways
 
 * Use `aia-instructor` for deployment and customization; use `ansible-survival-kit` to play the challenges in Module 4.
 * Save your personal OpenShift login token and use it in your Dev Spaces terminal.
-* Inspect the root `deploy.yml`, its roles, and its actual input files before running it.
-* Full CTFd archive deployment resets progress. Perform an approved deployment exercise before playing.
+* Inspect the root `deploy.yml`, its shared tasks, and the board it selects before running it.
+* Reset your personal board before playing; use `update-challenges.yml` for later content edits.

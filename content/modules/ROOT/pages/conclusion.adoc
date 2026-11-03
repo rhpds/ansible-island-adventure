@@ -7,7 +7,7 @@ Congratulations — you have completed the *Ansible Island Adventure Facilitator
 
 Over the course of this lab you:
 
-* Explored the pre-deployed Ansible Island Adventure architecture on OpenShift — CTFd, Gitea, AAP, Dev Spaces, and managed nodes
+* Explored the Ansible Island Adventure architecture on OpenShift — CTFd, Gitea, AAP, Dev Spaces, and managed nodes
 * Played through all challenge categories as a participant would, gaining firsthand experience with the CTF format
 * Modified challenge definitions and re-deployed them using the idempotent Ansible playbook
 * Learned how to position the event for customers and use CTFd engagement data for pipeline generation
@@ -24,7 +24,7 @@ You are now ready to independently deliver Ansible Island Adventure events:
 == Resources
 
 * https://github.com/rhpds/ansible-island-adventure[Deployment repository] — playbooks, roles, and challenge definitions
-* https://catalog.demo.redhat.com[Red Hat Demo Platform] — order pre-deployed environments
+* https://catalog.demo.redhat.com[Red Hat Demo Platform] — order lab environments
 * https://www.redhat.com/en/technologies/management/ansible[Ansible Automation Platform] — product information
 * https://l3acon.github.io/ansible-quest/[Ansible Quest] — the interactive video game side quest
 

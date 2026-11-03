@@ -196,6 +196,28 @@ mapping in the access guide. It does not create AAP projects, job templates,
 inventories, or credentials. Those resources remain separate from this CTFd/
 Gitea configuration step.
 
+## Instructor playbooks without credential exports
+
+The upstream `l3acon/aia-instructor` root playbooks use the instructor's current
+`oc login` and a local vault password. They derive `instructor-<guid>-ctfd` from
+`oc whoami`, validate its `island` route, and run the CTFd 3.7.7 content runner
+inside `deploy/ctfd` using namespaced `pods/exec` access. `namespaces.yml` already
+binds the instructor to the `admin` ClusterRole in that personal namespace, so
+this workflow needs no new cluster permissions, credential exports, or access
+Secret. The shared Gitea namespace remains restricted.
+
+`update-challenges.yml` preserves IDs/solves and unchanged hint purchases;
+`deploy.yml` clears personal challenge progress while retaining accounts,
+passwords, branding, and settings. Both retain challenges absent from YAML;
+hide unwanted challenges explicitly. `--check` rolls back the content transaction.
+The handout generator lists service links and existing usernames; distribute
+the provisioned lab password separately. No random player accounts are created.
+
+Organizer post-deploy still uses the private exported inventory and event vault.
+Those control-host inputs are not learner inputs and must not be distributed.
+Post-deploy initializes the board and generates an access guide explaining the
+two instructor inputs. It does not set a workspace vault password.
+
 ## Moving post-deploy into the student CI
 
 The current student CI installs this directory as the

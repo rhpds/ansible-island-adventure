@@ -13,7 +13,7 @@ You will explore the running architecture, play through the challenges as a part
 
 By the end of this lab you will be able to:
 
-. Navigate the pre-deployed Ansible Island Adventure environment on Red Hat OpenShift, identifying the architecture components (CTFd, Gitea, MariaDB, Redis, AAP, Dev Spaces) and understanding the deployment artifacts that provisioned them.
+. Navigate the Ansible Island Adventure environment on Red Hat OpenShift, identifying the architecture components (CTFd, Gitea, MariaDB, Redis, AAP, Dev Spaces) and understanding the deployment artifacts that provisioned them.
 . Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation guidance, handout templates, and pacing recommendations.
 . Configure challenge definitions, difficulty tiers, and content to tailor the event for specific customer use cases or partner engagements.
 . Analyze participant engagement metrics and create a follow-up plan to convert attendees into qualified leads.
@@ -57,4 +57,4 @@ include::partial$service-access.adoc[]
 
 * Working knowledge of Ansible (writing and running playbooks)
 * Familiarity with the OpenShift web console
-* Access to the Red Hat Demo Platform (your environment is pre-deployed)
+* Access to the Red Hat Demo Platform

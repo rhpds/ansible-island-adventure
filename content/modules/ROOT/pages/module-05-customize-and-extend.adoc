@@ -8,7 +8,7 @@ You can customize them for any customer or partner engagement without modifying 
 
 === Review the Challenge Structure
 
-. Save your work in the survival-kit workspace, then switch to your `aia-instructor` workspace from Module 3. Post-deploy configuration allows both to run simultaneously with separate persistent storage. If you are still using older shared-storage workspaces, stop the survival-kit workspace before starting the instructor workspace. Use the instructor repository for event administration.
+. Save your work in the survival-kit workspace, then switch to your `aia-instructor` workspace from Module 3. The Dev Spaces policy allows both to run simultaneously with separate persistent storage. If you are still using older shared-storage workspaces, stop the survival-kit workspace before starting the instructor workspace. Use the instructor repository for event administration.
 . In `/projects/aia-instructor`, open `roles/ctfd/vars/challenges.yml`.
 
 Each challenge is defined as a YAML dictionary with these fields:
@@ -103,15 +103,13 @@ curl -X POST https://{verifier_url}/validate \
 
 == Apply Changes Deliberately
 
-The toolkit has two different workflows. Reusing cached credentials is not a guarantee that player progress survives a deployment.
+Choose between updating challenge content and resetting your personal board before a new session.
 
-=== Update Challenge Content Through the API
+=== Update Challenge Content
 
-Review `update-challenges.yml` in the instructor repository. It updates challenge definitions through the CTFd API rather than restoring a full database archive.
+`update-challenges.yml` uses your existing OpenShift login and local vault password. It discovers your own board, then updates content inside its CTFd pod. No additional deployment inputs are needed.
 
-Before running it, the facilitator must resolve the deployment-input limitation described in Module 3: the current playbook still reads `rosa.creds` and derives a CTFd target from its defaults. Confirm that its target is *your intended CTFd instance*, that its administrator account is correct, and that you have compatible private inputs. Your existing personal OpenShift token does not override those pre-tasks.
-
-When those inputs have been prepared and checked, run:
+Preview the changes with `ansible-playbook update-challenges.yml --check`, then apply them:
 
 [source,bash]
 ----
@@ -119,32 +117,31 @@ cd /projects/aia-instructor
 ansible-playbook update-challenges.yml
 ----
 
-This API workflow updates existing challenges by name and retains their IDs. It also replaces flags and hints and deletes challenges absent from the definitions. Removing or renaming challenges can remove associated progress; changing points can change standings. Apply content changes before a customer event whenever possible.
+This workflow matches challenges by name and retains their IDs and solves. Unchanged flags and hints retain their IDs, including purchased hints. Challenges absent from YAML remain on the board; use `state: hidden` to hide them. Renaming creates a new challenge, removing hints removes their purchases, and changing points can change standings. Apply content changes before a customer event whenever possible.
 
 === Verify Your Changes
 
 . Open your CTFd instance: {ctfd_url}
 . Confirm that the edited challenge has the new point value.
 . If you added a challenge, verify its category, prerequisites, hints, and accepted flag.
-. Review existing solves and scores after an API update. Do not assume that deleting, renaming, or repricing a challenge leaves the leaderboard unchanged.
+. Review existing solves and scores after an update. Do not assume that renaming or repricing a challenge leaves the leaderboard unchanged.
 
 === Full Deployment Resets Progress
 
 [WARNING]
 ====
-Running `deploy.yml` builds and imports a CTFd configuration archive. That restore resets the target board, including scores, submissions, and player progress. Stable passwords in `player.creds` do not preserve those records.
+Running `deploy.yml` clears solves, submissions, awards, and purchased hints on your personal board. It preserves accounts, passwords, settings, branding, and challenge IDs while applying the challenge definitions.
 ====
 
-Use the full deployment exercise in Module 3 only with a facilitator-approved isolated target and compatible input files, before participants play. Do not run it during a customer event to apply a small content edit.
+Use the reset exercise in Module 3 before participants play. Use `update-challenges.yml` for content edits during preparation; do not reset a board during an event.
 
 == State Coordination and Artifact Handoff
 
 [cols="1,2,2",options="header"]
 |===
 | Operation | Intended Use | Effect on Progress
-| `update-challenges.yml` | Update content through the API | Existing challenge IDs are retained; deletions, renames, and point changes can affect progress or scores
-| `deploy.yml` | Full deployment and configuration archive import | Resets the target CTFd board and loses progress
-| Cached `player.creds` | Reuse player passwords and tokens | Does not protect scores or submissions from an archive restore
+| `update-challenges.yml` | Update personal board content | Retains challenge IDs and solves; point changes affect scores and removed hints lose purchases
+| `deploy.yml` | Prepare your board for a new session | Clears challenge progress; retains accounts, passwords, and settings
 |===
 
 === Fresh Environment Workflow — Artifact Handoff
@@ -169,12 +166,13 @@ New leaderboard deployments configure two running Dev Spaces workspaces per inst
 
 . Once provisioning completes, open the service details page in RHDP.
 . You will receive:
-** *Cluster API URL and access credentials* — in the service details; the legacy toolkit's `rosa.creds` input requires compatible fields supplied by the organizer
-** *Participant service accounts and passwords* — in the handouts or service details; toolkit-created player credentials are cached in `player.creds`
+** *Personal OpenShift access* — use the console to copy your instructor `oc login` command
+** *Participant service accounts and lab password* — in the student service details
+** *Instructor vault password* — supplied privately by the organizer for encrypted challenge answers
 . Before starting this lab, the organizer runs the event post-deploy playbook against the deployed students with the private event vault password. It validates the leaderboard's Dev Spaces policy, verifies the learners' repositories, loads the 25 base challenges and real flags, and writes an `ISLAND_ACCESS.md` guide in each instructor repository. This content step is still separate from student CI provisioning.
 . Verify student and administrator CTFd logins, challenge availability, the rendered Showroom service links, and both Dev Spaces repository workspaces before distributing access.
 
-The legacy toolkit's `player.creds` cache is created only when its separate deployment workflow is used. Use the student CI's published service credentials for this training environment.
+Instructors need only their personal OpenShift login and local vault password to run the toolkit. Keep the leaderboard administrator credentials with the organizer.
 
 ==== Step 3: Customize and Deploy
 
@@ -187,7 +185,7 @@ The legacy toolkit's `player.creds` cache is created only when its separate depl
 ansible-vault edit roles/ctfd/vars/flags.yml --vault-password-file .vault-password
 ----
 +
-. Before a full deployment, have the facilitator verify an isolated target and compatible `rosa.creds` and `workshop.creds` inputs as described in Module 3. A full run resets the target CTFd board. Once that configuration is ready:
+. Confirm `oc whoami` reports your instructor account. Before participants play, reset your personal board and apply the definitions:
 +
 [source,bash]
 ----
@@ -195,17 +193,18 @@ cd /projects/aia-instructor
 ansible-playbook deploy.yml
 ----
 +
-On a fresh environment (no cached `player.creds`), the deployer generates new credentials automatically.
+The playbook retains the accounts and passwords provisioned by the student catalog item.
 
 ==== Step 4: Generate and Distribute Handouts
 
-. Review the root `generate-handouts.yml` and its documented workshop-access inputs with the facilitator.
-. Use the generated `handouts/credentials.csv` and, where PDF-generation dependencies are available, `handouts/credential-handouts.pdf` to distribute participant URLs and login information.
+. Run `ansible-playbook generate-handouts.yml` from your instructor repository.
+. Open `handouts/generated/access.md` for service URLs and existing training usernames. Print from Markdown preview or distribute it privately; no PDF tools are required.
+. Supply the provisioned lab password separately from the student service details. The handout does not create users or include passwords. This training board uses one `lab-user`; a customer event with multiple participants requires its own account provisioning.
 . Distribute handouts before or at the start of the event.
 
 == Key Takeaways
 
 * Challenge content is defined in YAML variables files and can be customized per engagement without modifying the playbook or roles.
-* Use the API update workflow for content changes, after verifying its target and inputs.
-* Full archive deployment resets CTFd progress; cached player credentials do not protect scores or submissions.
-* For customer events: order from RHDP → receive pre-deployed environment → customize challenges → distribute credentials → facilitate.
+* Use `update-challenges.yml` for content edits after checking the discovered personal board.
+* `deploy.yml` clears your board's progress; account passwords remain unchanged.
+* For customer events: order from RHDP → verify services → customize challenges → distribute credentials → facilitate.
