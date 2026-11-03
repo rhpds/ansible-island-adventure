@@ -149,17 +149,21 @@ Use the full deployment exercise in Module 3 only with a facilitator-approved is
 
 === Fresh Environment Workflow — Artifact Handoff
 
-This section demonstrates the full workflow for ordering a fresh RHDP environment and deploying from scratch using the provided playbook and roles.
+This section describes the organizer's workflow for preparing a fresh facilitator-training environment. Complete it before learners arrive. The customer-facing event normally uses a shared CTFd board; this training layout gives each learner a personal board.
 
 ==== Step 1: Order from RHDP
 
 . Open the https://catalog.demo.redhat.com[Red Hat Demo Platform catalog].
-. Search for *"Ansible Island Adventure"* or browse the catalog.
-. Click *Order* and configure:
-** *Number of users* — Set to the number of instructors/participants you expect.
+. Order the *Ansible Island Adventure leaderboard* catalog item first. It provides the shared OpenShift cluster, AAP, Gitea, SSO, and Dev Spaces.
+. Configure the purpose and duration:
 ** *Purpose* — Select the appropriate purpose (e.g., "Customer demo", "Partner workshop").
 ** *Duration* — Set to cover your event plus preparation time (typically 8–24 hours).
-. Submit the order. Provisioning takes approximately 60 minutes.
+. Wait until the leaderboard is fully provisioned. Keep its administrator credentials private.
+. Order the *Ansible Island Adventure student* catalog item or a student workshop, using these five values from the leaderboard's service details: OpenShift API server URL, cluster ingress domain, cluster administrator password, Keycloak administrator username, and Keycloak administrator password.
+. Set the student workshop's user count to the number of training learners. Each student deployment creates a managed node and integrates that learner's accounts and CTFd instance with the shared services.
+. Wait for every student deployment to finish. Allow approximately 60 minutes for the shared environment plus time for student provisioning, and leave time for the checks below.
+
+New leaderboard deployments configure two running Dev Spaces workspaces per instructor with separate persistent storage. Student deployments reuse that service.
 
 ==== Step 2: Receive Credentials
 
@@ -167,7 +171,10 @@ This section demonstrates the full workflow for ordering a fresh RHDP environmen
 . You will receive:
 ** *Cluster API URL and access credentials* — in the service details; the legacy toolkit's `rosa.creds` input requires compatible fields supplied by the organizer
 ** *Participant service accounts and passwords* — in the handouts or service details; toolkit-created player credentials are cached in `player.creds`
-. No `player.creds` exists on a fresh environment — the deployer generates it automatically on the first run. The managed node VM is provisioned separately by the student catalog item.
+. Before starting this lab, the organizer runs the event post-deploy playbook against the deployed students with the private event vault password. It validates the leaderboard's Dev Spaces policy, verifies the learners' repositories, loads the 25 base challenges and real flags, and writes an `ISLAND_ACCESS.md` guide in each instructor repository. This content step is still separate from student CI provisioning.
+. Verify student and administrator CTFd logins, challenge availability, the rendered Showroom service links, and both Dev Spaces repository workspaces before distributing access.
+
+The legacy toolkit's `player.creds` cache is created only when its separate deployment workflow is used. Use the student CI's published service credentials for this training environment.
 
 ==== Step 3: Customize and Deploy
 
