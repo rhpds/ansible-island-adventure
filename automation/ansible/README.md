@@ -143,6 +143,10 @@ CTFd URL, and Gitea owner before writing an inventory with mode `0600` under
 `.aia-dev/`. It exports the actual published credentials, including different
 CTFd and Gitea usernames, and records the Python interpreter used for export.
 It places no orders. The generated kubeconfig is also kept under `.aia-dev/`.
+Post-deploy reuses that token/CA kubeconfig and checks access with `oc whoami`;
+it does not perform another password login or replace the exported identity.
+Catalog and legacy invocations without `aia_kubeconfig` retain their password
+login. The role uses the `oc` binary found on the caller's path.
 
 To validate Dev Spaces alone, use the same exported inventory:
 
