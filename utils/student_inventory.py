@@ -85,6 +85,12 @@ def inventory_from_claims(run, claims, kubeconfig):
         if ctfd_url != f"https://island-{username}-ctfd.{fields['openshift_cluster_ingress_domain']}":
             raise ValueError("Student CTFd URL does not match its GUID and leaderboard cluster")
         resources = {key: endpoint(data, key) for key in ("gitea_url", "aap_url", "devspaces_url")}
+        # Older CIs expose SSH only; new CIs publish a native HTTPS Route.
+        if "managed_node_web_url" in data:
+            web_url = endpoint(data, "managed_node_web_url")
+            if not urlsplit(web_url).hostname.startswith(f"treasure-{guid}."):
+                raise ValueError("Student managed-node web URL does not match its GUID")
+            resources["managed_node_web_url"] = web_url
         hosts[username] = {
             "guid": guid,
             "instructor": {"name": username, "ctfd_ns": username + "-ctfd", "lab_ns": username + "-lab",

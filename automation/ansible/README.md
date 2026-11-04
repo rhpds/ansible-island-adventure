@@ -197,8 +197,17 @@ Other inventories, projects, credentials, and templates are retained. Existing
 managed Machine credential secrets are not rewritten on rerun; explicitly set
 `aia_rotate_machine_credential=true` after a published SSH password rotation.
 Module 4 selects this inventory and Machine credential for the Apache template.
-The VM FQDN belongs to its infrastructure cluster, so the lab fetches the web
-page through the published SSH endpoint instead of assuming direct HTTP routing.
+The student CI creates a per-instructor `treasure` HTTPS Route in the VM's
+hosting cluster, targeting the existing `bastion` Service's `bastion-80` port.
+It publishes `managed_node_web_url` before Showroom is deployed. The exporter
+validates that URL against the student GUID and includes it in the access guide.
+Module 4 links to the VM's real Apache page after the learner's job succeeds.
+The Route and Service survive VM stop/start; the namespace is removed with the
+student CI. No proxy pod or SSH credential is needed for the web endpoint.
+
+Older CIs without `managed_node_web_url` keep the documented SSH/curl fallback.
+The shared leaderboard does not create this Route: each student VM runs in its
+own RHDP hosting cluster and sandbox namespace.
 
 The instructor answer vault in each Gitea fork is re-keyed in memory with
 `aia_lab_password` (the CI's published `password` field). The filter first tries

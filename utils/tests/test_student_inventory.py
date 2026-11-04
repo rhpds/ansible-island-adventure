@@ -96,6 +96,19 @@ class InventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'SSH port'):
             self.inventory()
 
+    def test_optional_web_route_is_exported_only_for_its_student(self):
+        first=self.claims['student-1']['status']['summary']['provision_data']
+        first['managed_node_web_url']='https://treasure-first.apps.hosting.example.test/'
+        hosts=self.inventory()['all']['children']['aia_students']['hosts']
+        self.assertEqual(hosts['instructor-first']['aia_student']['managed_node_web_url'],
+                         'https://treasure-first.apps.hosting.example.test')
+        self.assertNotIn('managed_node_web_url',hosts['instructor-second']['aia_student'])
+        for value in ['https://treasure-second.apps.hosting.example.test',
+                      'http://treasure-first.apps.hosting.example.test',
+                      'https://treasure-first.apps.hosting.example.test/?password=unsafe']:
+            first['managed_node_web_url']=value
+            with self.assertRaises(ValueError):self.inventory()
+
     def test_control_host_kubeconfig_uses_leaderboard_token_and_ca(self):
         import base64
         data = self.claims['leaderboard']['status']['summary']['provision_data']

@@ -219,6 +219,18 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
         self.assertEqual(self.writes, writes)
         self.assertEqual(self.student_vaults,vaults)
 
+    def test_web_url_is_only_in_its_students_access_guide(self):
+        data=json.loads(self.inventory.read_text())
+        first,second=list(self.users)
+        url='https://treasure-'+first.removeprefix('instructor-')+'.apps.hosting.example.test'
+        data['all']['children']['aia_students']['hosts'][first]['aia_student']['managed_node_web_url']=url
+        self.inventory.write_text(json.dumps(data))
+        rc,output=self.run_playbook('--tags','student_access')
+        self.assertEqual(rc,0,output)
+        self.assertIn(url,self.guides[first])
+        self.assertNotIn(url,self.guides[second])
+        self.assertIn('does not publish a web URL',self.guides[second])
+
     def test_missing_event_flag_stops_before_any_service_request(self):
         self.flags.write_text("ctfd_flags: {}\n")
         rc, output = self.run_playbook()

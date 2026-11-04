@@ -41,8 +41,16 @@ credential in your Apache job template; passwords stay in AAP's credential store
 - SSH endpoint: `{{ aia_managed_node.host }}:{{ aia_managed_node.port }}`
 - SSH username: `{{ aia_managed_node.username }}`
 
-The VM's private FQDN belongs to its infrastructure cluster. To fetch the Apache
-page from Dev Spaces, use the published SSH endpoint:
+{% if aia_student.managed_node_web_url is defined %}
+After the Apache job succeeds, open [your managed node's web page]({{ aia_student.managed_node_web_url }})
+to find the treasure-chest keyword. This URL is specific to your VM and remains
+stable across VM stop/start. Before Apache is deployed, it can report unavailable.
+
+You can also fetch the page through SSH from Dev Spaces:
+{% else %}
+This deployment does not publish a web URL. Fetch the Apache page from Dev Spaces
+through the published SSH endpoint:
+{% endif %}
 
 ```bash
 ssh -p {{ aia_managed_node.port }} {{ aia_managed_node.username }}@{{ aia_managed_node.host }} 'curl -fsS http://127.0.0.1/'

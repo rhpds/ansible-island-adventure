@@ -225,13 +225,25 @@ The inventory also contains `localhost` for the controller-local exercises below
 * *Credentials:* Add *Managed Node SSH* and the *Vault Credential* (passphrase `AAP`)
 * *Enable Privilege Escalation:* Check this option
 . Launch the job and wait for it to complete.
-. Fetch the web page through your VM's published SSH endpoint from the Dev Spaces terminal. Its private FQDN belongs to a different infrastructure cluster, so a direct `curl http://rhel` will not reach it. Use your provisioned lab password if SSH prompts for authentication:
+ifdef::managed_node_web_url[]
+. Open {managed_node_web_url}[your managed node's web page] in a browser and find the treasure keyword. You can also fetch it from your Dev Spaces terminal:
++
+[source,bash,subs="attributes"]
+----
+curl -fsS '{managed_node_web_url}'
+----
++
+The URL belongs to your instructor's VM. It can report unavailable until Apache is deployed; if it still does after the job succeeds, check the job's inventory, `web` group, and Machine credential.
+endif::managed_node_web_url[]
+ifndef::managed_node_web_url[]
+. This deployment does not publish a web URL. Fetch the page through your VM's SSH endpoint from the Dev Spaces terminal. Use your provisioned lab password if SSH prompts for authentication:
 +
 [source,bash,subs="attributes"]
 ----
 ssh -p {bastion_ssh_port} {bastion_ssh_user_name}@{bastion_public_hostname} 'curl -fsS http://127.0.0.1/'
 ----
 +
+endif::managed_node_web_url[]
 . Find the treasure keyword in the response and submit it as your flag.
 
 == Side Quest and Trivia
