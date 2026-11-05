@@ -8,7 +8,7 @@ This module introduces the Ansible Island Adventure concept and its pirate-theme
 
 - **Personas:** Solution Architects, TAMs, partner engineers
 - **Prerequisites for this module:** Basic Ansible concepts (playbooks, roles, inventories); some exposure to OpenShift
-- **Estimated duration:** 15 minutes
+- **Estimated duration:** 10 minutes
 
 ### Learning Objectives
 
@@ -20,9 +20,9 @@ This module introduces the Ansible Island Adventure concept and its pirate-theme
 
 | Section | Title | Duration |
 |---------|-------|----------|
-| 1 | Introduction to Ansible Island Adventure | 5 min |
-| 2 | The customer experience walkthrough | 5 min |
-| 3 | Challenge categories and difficulty tiers | 5 min |
+| 1 | Introduction to Ansible Island Adventure | 3 min |
+| 2 | The customer experience walkthrough | 3 min |
+| 3 | Challenge categories and difficulty tiers | 4 min |
 
 ### Detailed Steps
 

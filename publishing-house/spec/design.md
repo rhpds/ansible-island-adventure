@@ -4,7 +4,7 @@
 
 Ansible Island Adventure is a "teach the teacher" lab that enables Red Hatters to use, deliver, and customize gamified Capture the Flag (CTF) competitions around Red Hat Ansible Automation Platform for customers and partners. The lab is already built and proven with customers — this session teaches the delivery team how to facilitate events, customize challenges, and generate pipeline.
 
-The environment arrives pre-deployed from the Red Hat Demo Platform (RHDP). Participants explore the architecture, play through the challenges as a participant would, modify challenge content using the idempotent Ansible deployer, and learn how to position the event for pipeline generation. By the end, they can independently order the platform from RHDP, facilitate a customer-facing CTF event, customize challenges for their audience, and convert engagement into qualified leads.
+The environment and event content are prepared before training using the Red Hat Demo Platform (RHDP) catalog items and organizer post-deploy. Learners play as participants first, then explore architecture and instructor administration, demonstrate a personal-board reset, customize content with a progress-preserving update, and discuss pipeline generation using saved gameplay results.
 
 ## Target Audience
 
@@ -24,7 +24,7 @@ The environment arrives pre-deployed from the Red Hat Demo Platform (RHDP). Part
 
 1. Navigate the pre-deployed Ansible Island Adventure environment on Red Hat OpenShift, identifying the architecture components (CTFd, Gitea, MariaDB, Redis, AAP, Dev Spaces) and understanding the deployment artifacts that provisioned them
 2. Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation guidance, handout templates, and pacing recommendations for groups of varying size and technical background
-3. Configure challenge definitions, difficulty tiers, and content to tailor the event for specific customer use cases or partner engagements, and re-deploy changes using the idempotent Ansible playbook
+3. Configure challenge definitions, difficulty tiers, and content for customer use cases, applying progress-preserving updates and distinguishing them from board resets
 4. Analyze participant engagement metrics — challenge completion rates, time on platform, hint usage — and create a follow-up plan to convert attendees into qualified leads
 
 ## Content Type
@@ -45,15 +45,17 @@ Lab (hands-on)
 
 | Module | Title | Duration |
 |--------|-------|----------|
-| 1 | Welcome to the island | 15 min |
+| 1 | Welcome to the island | 10 min |
 | 2 | Prerequisites and logistics | 10 min |
-| 3 | Explore the environment | 15 min |
-| 4 | Play the game | 45 min |
+| 3 | Play the game | 50 min |
+| 4 | Explore the environment | 20 min |
 | 5 | Customize and extend | 20 min |
-| 6 | From event to pipeline | 15 min |
-| — | **Total hands-on** | **~65 min** |
-| — | Intro / presentation | ~55 min |
+| 6 | From event to pipeline | 10 min |
 | — | **Total lab** | **~2 hours** |
+
+Module 3 includes 10 minutes access/workspace setup, 35 minutes scored play including Warm Up, and 5 minutes debrief and recording results. Module 4 includes instructor CLI/vault setup and a deliberate reset after the practice round. Re-solve one Warm Up challenge for Module 5's content-update preservation check. Use the saved Module 3 observations in Module 6 because the reset clears original gameplay progress.
+
+Customer events follow the Showroom schedule of **1–1.5 hours**: welcome and access setup, **one 30–45-minute scoring window including Warm Up with a strict 45-minute limit**, and wrap-up. Optional extended networking/debrief is additional. Provisioning and organizer post-deploy are completed before learners arrive, outside both session clocks.
 
 ## Difficulty Level
 
@@ -61,11 +63,11 @@ Intermediate
 
 ## Environment
 
-**Learner view:** A shared OpenShift CNV cluster provisioned via RHDP with all services pre-deployed. Each instructor gets their own CTFd instance, AAP organization, Gitea account, RHEL9 managed node VM, and Dev Spaces access — all using the same login credentials. The deployment artifacts (`deploy/deploy.yml`, roles, `.cnv.env`) are available so instructors can understand the architecture, re-run the idempotent deployer, and modify challenges.
+**Learner view:** The leaderboard CI provides shared OpenShift services; linked student CIs provide personal identities, CTFd instances, and separately provisioned managed VMs. Learners use the CTFd player account and survival kit first. Later they open their `aia-instructor` repository, authenticate with their personal OpenShift identity, and create a local vault-password file with the lab password. Root `deploy.yml` resets personal board progress; `update-challenges.yml` updates content while retaining solves. Neither recreates the catalog infrastructure. Organizer administrator credentials remain private.
 
 **Automation needed:** Yes (pre-deployed by platform)
 
-- Ansible playbook deploys all operators (AAP 2.7, Dev Spaces, OpenShift Virtualization), shared services (Gitea, AAP Gateway), and per-instructor resources (CTFd stack, RHEL9 VMs, AAP orgs) on a single CNV cluster
+- The leaderboard and linked student catalog items provision shared services and per-instructor resources; the organizer completes post-deploy before the session
 - Per-instructor credential handouts published via `set_stats` for Showroom display
 - CTFd challenge archive build and import with vault-encrypted flags
 - Gitea repository setup with challenge source material
@@ -74,10 +76,10 @@ Intermediate
 ## Assessment Strategy
 
 - **Modules 1–2 (Welcome, Prerequisites):** Trust-based — presentation and discussion, no automated validation
-- **Module 3 (Explore the environment):** Instructor verifies access to all services (CTFd, Gitea, AAP, Dev Spaces, OCP console) by navigating to each URL
-- **Module 4 (Play the game):** CTFd scoring platform tracks challenge completion — instructors submit flags and the platform validates answers automatically
-- **Module 5 (Customize and extend):** Instructor modifies a challenge definition and re-runs the deployer; success is verified by seeing the updated challenge in their CTFd instance
-- **Module 6 (From event to pipeline):** Trust-based — discussion and planning exercise, no automated validation
+- **Module 3 (Play the game):** Player flag submissions and saved score/challenge observations from the time-boxed round
+- **Module 4 (Explore the environment):** Personal identity/vault checks, reset preview, cleared progress with retained accounts/infrastructure, and one new Warm Up solve
+- **Module 5 (Customize and extend):** Edited challenge appears after `update-challenges.yml`; the unchanged Warm Up solve remains
+- **Module 6 (From event to pipeline):** Discussion and planning using saved Module 3 results; customer-event results are retained before any reset
 
 ## Infrastructure Requirements
 

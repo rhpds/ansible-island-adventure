@@ -1,6 +1,8 @@
 = From Event to Pipeline
 :navtitle: 6. From Event to Pipeline
 
+Allow *10 minutes* for positioning, engagement analysis, and a short follow-up plan. Continue longer discussion or Q&A after the training session if needed.
+
 == Positioning and Lead Generation
 
 Ansible Island Adventure is not just a technical event — it is a *pipeline generation tool* when paired with proper positioning and follow-up.
@@ -30,17 +32,19 @@ When pitching Ansible Island Adventure to customers and partners, emphasize:
 | "Drive traffic to your booth with a live CTF competition. Participants compete for prizes while learning Ansible."
 
 | *Executive briefing add-on*
-| "After the business discussion, let the technical team experience the platform firsthand in a 90-minute hands-on challenge."
+| "After the business discussion, offer a 90-minute event with up to 45 minutes of scored hands-on challenges."
 |===
 
 == Engagement Metrics and Analysis
 
-CTFd captures rich participant data that reveals interest areas and skill levels. Let's analyze the data from your session.
+CTFd captures participant data that helps identify interest areas and skill levels. Use the score, solved challenges, hints, and observations you saved at the end of Module 3 for this training discussion. The controlled Module 4 reset cleared the original game progress; your current board contains only the later practice activity and content edits.
+
+For a customer event, collect the event's results before any reset and retain them for follow-up. The training lab's personal boards demonstrate the workflow; a shared customer board provides the multi-participant results discussed below.
 
 === Access the CTFd Admin Panel
 
 . Open your CTFd instance: {ctfd_url}
-. Log in as admin (the facilitator account).
+. Log in as `{ctfd_admin_username}` (the facilitator account) with your provisioned lab password.
 . Navigate to the *Admin Panel* (gear icon or `/admin` URL path).
 
 === Key Metrics to Review
@@ -93,7 +97,7 @@ Challenge completion patterns reveal participant interest areas:
 
 === Build a Follow-Up Plan
 
-Using the engagement data from CTFd, build a targeted follow-up plan:
+Using your saved Module 3 observations for this exercise, build a sample follow-up plan. For a customer event, use the retained CTFd event results alongside your facilitation notes:
 
 . *Identify strong leads* — Participants who completed Treasure Hunt challenges and stayed on-platform for the full event duration are your highest-quality leads.
 . *Segment by interest* — Group participants by their challenge completion patterns (see table above) to tailor follow-up messaging.

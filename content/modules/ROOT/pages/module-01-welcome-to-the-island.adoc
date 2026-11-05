@@ -1,6 +1,8 @@
 = Welcome to the Island
 :navtitle: 1. Welcome to the Island
 
+Allow *10 minutes* for this overview. Modules 1 and 2 introduce the event; Module 3 lets you play as a participant before learning the administration workflow.
+
 == Introduction to Ansible Island Adventure
 
 Ansible Island Adventure is a gamified *Capture the Flag (CTF)* competition built around Red Hat Ansible Automation Platform.

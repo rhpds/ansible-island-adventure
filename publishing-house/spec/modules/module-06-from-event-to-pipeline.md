@@ -8,7 +8,7 @@ This closing module shifts from technical delivery to business impact. Students 
 
 - **Personas:** Solution Architects, TAMs, partner engineers
 - **Prerequisites for this module:** Completion of Modules 1-5
-- **Estimated duration:** 15 minutes
+- **Estimated duration:** 10 minutes
 
 ### Learning Objectives
 
@@ -20,17 +20,17 @@ This closing module shifts from technical delivery to business impact. Students 
 
 | Section | Title | Duration |
 |---------|-------|----------|
-| 1 | Positioning and lead generation | 4 min |
-| 2 | Engagement metrics and analysis | 5 min |
+| 1 | Positioning and lead generation | 3 min |
+| 2 | Engagement metrics and analysis | 3 min |
 | 3 | Follow-up planning and resources | 3 min |
-| 4 | Open Q&A | 3 min |
+| 4 | Open Q&A (extend after the session if needed) | 1 min |
 
 ### Detailed Steps
 
 1. Review positioning guidance: how to pitch Ansible Island Adventure to customers and partners as a combined enablement and marketing experience
 2. Examine how participant contact information is captured through CTFd during registration
-3. Navigate the CTFd admin panel to review participant data collected during Module 4
-4. Analyze engagement metrics from the session: review challenge completion rates across categories, identify which challenges saw the most activity, and note time-on-platform data
+3. Use gameplay results and observations saved at the end of Module 3; Module 4 cleared the original progress from the personal board
+4. Locate corresponding CTFd admin views and discuss how retained results from a real shared customer board support engagement analysis
 5. Examine hint usage patterns to understand where participants struggled and what topics need follow-up enablement
 6. Discuss how engagement metrics map to participant interest areas: heavy controller usage suggests orchestration interest, strong CLI completion suggests automation maturity
 7. Build a sample follow-up plan using the engagement data, identifying which attendees are strong leads and what their likely next steps would be
@@ -47,5 +47,6 @@ This closing module shifts from technical delivery to business impact. Students 
 ### Infrastructure Notes
 
 - CTFd admin access is required to review participant metrics and engagement data
-- Engagement data from Module 4 is used as a live example for analysis exercises
+- Saved Module 3 results are used for training; current post-reset data does not represent the original practice round
+- Customer-event results must be retained before any reset
 - No additional infrastructure beyond the pre-deployed environment is needed

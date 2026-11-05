@@ -1,5 +1,13 @@
 = Play the Game
-:navtitle: 4. Play the Game
+:navtitle: 3. Play the Game
+:page-aliases: module-04-play-the-game.adoc
+
+== Timing and Participant Mode
+
+Allow *50 minutes*: *10 minutes for service access and workspace setup*, *35 minutes of scored play*, and *5 minutes for debrief and saving your results*.
+The facilitator starts the scoring clock once everyone is ready. All flag submissions, including Warm Up, belong inside that 35-minute window. Choose challenges that fit your experience; completing every exercise below is not required.
+
+Use your player account and the *Ansible Survival Kit* throughout this module. The environment, challenges, AAP inventory, and Machine credential have already been prepared by the organizer. You do not need the instructor toolkit, an instructor vault-password file, or a terminal `oc login` to perform the exercises below. You will explore event administration in Module 4.
 
 == Receive Handouts and Orientation
 
@@ -11,7 +19,7 @@ In a customer event, participants receive a printed or digital handout containin
 
 For this lab, use the following accounts:
 
-include::partial$service-access.adoc[]
+include::partial$participant-access.adoc[]
 
 Your service URLs:
 
@@ -31,14 +39,12 @@ Your service URLs:
 . Click *Login* and sign in as `{ctfd_student_username}` with your provisioned lab password.
 . You should see the challenge board with categories listed.
 
-Use `{ctfd_admin_username}` when you need to manage your CTFd instance as the facilitator.
+Stay signed in as the player while playing. You will use the separate facilitator account in Module 4.
 
 == Open the Ansible Survival Kit Workspace
 
-For this module, use your *`ansible-survival-kit`* repository. The `aia-instructor` workspace from Module 3 is for managing the event; the survival kit contains the participant challenge playbooks.
+Use your *`ansible-survival-kit`* repository for participant challenge playbooks. You will open the separate `aia-instructor` repository for administration in Module 4.
 
-. Save your work in the instructor workspace. The lab supports *two workspaces running* together: the instructor toolkit and the survival kit, each with its own persistent storage. New leaderboard deployments configure this automatically. If an older environment only allows one, ask the event organizer to update its Dev Spaces policy.
-. If your instructor workspace predates that configuration and still uses shared per-user storage, stop it and wait until it shows *Stopped* before continuing. Back up local changes before recreating an older workspace; changing the storage setting does not move its files.
 . Open Gitea at {gitea_url} and sign in as `{gitea_username}` with your provisioned lab password.
 . Open *your own* `ansible-survival-kit` repository and select the *`main`* branch.
 . Click *Code → HTTPS* and copy the clone URL. It should have this form:
@@ -47,7 +53,7 @@ For this module, use your *`ansible-survival-kit`* repository. The `aia-instruct
 ----
 {gitea_url}/{gitea_username}/ansible-survival-kit.git
 ----
-. Open {devspaces_url}, choose *Create Workspace*, and paste that URL. Leave *Temporary Storage* off and select *Create & Open*. Use the repository's `.devfile.yaml`. When asked "Do you trust the authors of this repository?", select *Continue*. If Git requests credentials, use your Gitea account.
+. Open {devspaces_url}, select *Log in with OpenShift* if prompted, and use your personal account. Allow the Dev Spaces access request. Choose *Create Workspace* and paste the repository URL. Leave *Temporary Storage* off and select *Create & Open*. Use the repository's `.devfile.yaml`. When asked "Do you trust the authors of this repository?", select *Continue*. If Git requests credentials, use your Gitea account and provisioned lab password.
 . Wait for the editor and the *Install lab collections* startup task to finish. The devfile supplies Ansible, Lint, Navigator, and related tools; keep it rather than selecting the default devfile.
 . Open *Terminal → New Terminal* and check the repository and tools:
 +
@@ -59,7 +65,7 @@ ansible --version
 ansible-lint --version
 ansible-navigator --version
 ----
-. Confirm that the branch is `main`. Paste the personal `oc login` command you saved in Module 3 into this terminal and verify your identity with `oc whoami`. Generate a new token from the OpenShift console if it has expired.
+. Confirm that the branch is `main` and the tools run successfully. Tell the facilitator if access or startup is blocked before scored play begins.
 
 Dev Spaces clones the repository for you. Run the CLI exercises below from `/projects/ansible-survival-kit`; you do not need another clone. The AAP Treasure Hunt project later uses the separate `treasurehunt` branch.
 
@@ -82,8 +88,8 @@ The facilitator provides a key to unlock the remaining challenges.
 
 [NOTE]
 ====
-In a customer event, *you* are the facilitator. You control when to reveal this key to pace the event.
-The unlock key is defined in `roles/ctfd/vars/flags.yml` in the instructor toolkit (vault-encrypted).
+For this training round, the session facilitator gives you the unlock key. Continue as a player; instructor answer-vault access is covered after the game in Module 4.
+When you facilitate a customer event, you will provide the key to participants to control the start of play.
 ====
 
 === Ansible Docs and Collections
@@ -264,7 +270,9 @@ The https://l3acon.github.io/ansible-quest/[Ansible Quest] is an interactive vid
 
 == Debrief and Discussion
 
-After completing the challenges, reflect on the experience from a *facilitator's perspective*:
+When the facilitator ends the 35-minute scored window, stop submitting flags. Use the final five minutes to save your results and reflect from a *facilitator's perspective*.
+
+Record your final score, solved challenges or categories, hints used, and any access or challenge blockers. You can save a screenshot of your CTFd score or challenge view; keep credentials and tokens out of screenshots. Keep these notes for Modules 4 and 6: the next module deliberately clears your personal board's game progress.
 
 * *Which challenges resonated most?* — At the Beach and Treasure Hunt provide the deepest hands-on learning.
 * *Where did participants struggle?* — Common blockers include Gitea clone URLs, vault password confusion, and credential configuration in AAP.
@@ -278,3 +286,4 @@ After completing the challenges, reflect on the experience from a *facilitator's
 * The challenge progression moves from basic Ansible awareness through CLI proficiency to controller orchestration, covering a wide skill spectrum.
 * The scoring and hint system balances challenge difficulty with accessibility, keeping all skill levels engaged.
 * Understanding which challenges resonate with different audiences helps you customize and pace future customer events.
+* Keep your recorded results for the administration reset exercise and the later engagement discussion.

@@ -21,27 +21,27 @@ spec:
   - Demonstrate how to facilitate a customer-facing CTF event using the provided facilitation
     guidance, handout templates, and pacing recommendations for groups of varying
     size and technical background
-  - Configure challenge definitions, difficulty tiers, and content to tailor the event
-    for specific customer use cases or partner engagements, and re-deploy changes
-    using the idempotent Ansible playbook
+  - Configure challenge definitions, difficulty tiers, and content for customer use
+    cases, applying progress-preserving updates and distinguishing them from board
+    resets
   - Analyze participant engagement metrics and create a follow-up plan to convert
     attendees into qualified leads
   modules:
   - id: module-01
     title: Welcome to the island
-    duration_min: 15
+    duration_min: 10
     status: complete
   - id: module-02
     title: Prerequisites and logistics
     duration_min: 10
     status: complete
   - id: module-03
-    title: Explore the environment
-    duration_min: 15
+    title: Play the game
+    duration_min: 50
     status: complete
   - id: module-04
-    title: Play the game
-    duration_min: 45
+    title: Explore the environment
+    duration_min: 20
     status: complete
   - id: module-05
     title: Customize and extend
@@ -49,7 +49,7 @@ spec:
     status: complete
   - id: module-06
     title: From event to pipeline
-    duration_min: 15
+    duration_min: 10
     status: complete
   environment:
     platform: ocp
@@ -125,18 +125,18 @@ approval_checklist:
       overview: Covers ordering the pre-deployed environment from RHDP, staffing ratios,
         pre-event preparation (credential distribution, handouts), room setup, and
         event pacing.
-    - title: Explore the environment
-      overview: Tour of the pre-deployed architecture (CTFd, Gitea, AAP, Dev Spaces,
-        managed nodes) on OpenShift, review of deployment artifacts (rosa.creds, player.creds,
-        keys/, playbook structure), and understanding the RHDP ordering workflow.
     - title: Play the game
-      overview: Core hands-on module where attendees play through all six challenge
-        categories as participants would at a customer event, then debrief on scoring
-        methodology and challenge effectiveness.
+      overview: Participant access and survival-kit workspace setup, 35 minutes of
+        scored play including Warm Up, then debrief and saved results for the later
+        reset and engagement analysis. Instructor setup follows gameplay.
+    - title: Explore the environment
+      overview: Architecture tour, second instructor workspace, personal OpenShift
+        login and lab-password vault setup, followed by a controlled personal-board
+        reset. Verify retained infrastructure and re-solve one Warm Up challenge.
     - title: Customize and extend
-      overview: Modify challenge definitions and difficulty tiers, re-run the idempotent
-        deployer to apply changes, understand state coordination (cached credentials
-        vs. runtime data), and take deployment artifacts to own RHDP-ordered environments.
+      overview: Modify definitions and apply update-challenges.yml, verifying that
+        the post-reset solve remains. Contrast updates with board resets and review
+        organizer provisioning and handout references outside the training clock.
     - title: From event to pipeline
       overview: 'Positioning the event for customers, capturing lead data through CTFd,
         analyzing engagement metrics, building a follow-up plan, and accessing resources

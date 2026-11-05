@@ -1,6 +1,8 @@
 = Customize and Extend
 :navtitle: 5. Customize and Extend
 
+Allow *20 minutes* for challenge editing, applying a content update, and verifying progress preservation. The organizer provisioning workflow later in this module is reference material; catalog ordering and post-deploy preparation take place before learners arrive, outside the training clock.
+
 == Modify Challenge Content
 
 Challenge definitions live in YAML variable files.
@@ -8,7 +10,7 @@ You can customize them for any customer or partner engagement without modifying 
 
 === Review the Challenge Structure
 
-. Save your work in the survival-kit workspace, then switch to your `aia-instructor` workspace from Module 3. The Dev Spaces policy allows both to run simultaneously with separate persistent storage. If you are still using older shared-storage workspaces, stop the survival-kit workspace before starting the instructor workspace. Use the instructor repository for event administration.
+. Continue in your `aia-instructor` workspace from Module 4. The survival-kit workspace from Module 3 can remain available alongside it with separate persistent storage. Use the instructor repository for event administration.
 . In `/projects/aia-instructor`, open `roles/ctfd/vars/challenges.yml`.
 
 Each challenge is defined as a YAML dictionary with these fields:
@@ -124,7 +126,7 @@ This workflow matches challenges by name and retains their IDs and solves. Uncha
 . Open your CTFd instance: {ctfd_url}
 . Confirm that the edited challenge has the new point value.
 . If you added a challenge, verify its category, prerequisites, hints, and accepted flag.
-. Review existing solves and scores after an update. Do not assume that renaming or repricing a challenge leaves the leaderboard unchanged.
+. Confirm that the *Write Your Name in the Sand* solve you created after the Module 4 reset is still present. This exercise changes *Ansible Docs*, so the unchanged Warm Up solve provides a clear preservation check. Renaming or repricing a solved challenge can affect standings.
 
 === Full Deployment Resets Progress
 
@@ -133,7 +135,7 @@ This workflow matches challenges by name and retains their IDs and solves. Uncha
 Running `deploy.yml` clears solves, submissions, awards, and purchased hints on your personal board. It preserves accounts, passwords, settings, branding, and challenge IDs while applying the challenge definitions.
 ====
 
-Use the reset exercise in Module 3 before participants play. Use `update-challenges.yml` for content edits during preparation; do not reset a board during an event.
+Module 4 deliberately reset your personal training board after the practice round. For a customer event, reset before participants begin. Use `update-challenges.yml` for content edits that retain progress; never reset a board during an active competition.
 
 == State Coordination and Artifact Handoff
 
@@ -176,7 +178,7 @@ Instructors need only their personal OpenShift login and local vault password to
 
 ==== Step 3: Customize and Deploy
 
-. Open your `aia-instructor` Gitea repository in Dev Spaces as in Module 3.
+. Open your `aia-instructor` Gitea repository in Dev Spaces as in Module 4.
 . Modify `roles/ctfd/vars/challenges.yml` to tailor challenges for the customer audience.
 . If needed, edit `roles/ctfd/vars/flags.yml` to add or change flag values:
 +

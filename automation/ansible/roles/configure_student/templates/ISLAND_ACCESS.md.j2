@@ -25,9 +25,13 @@ In the `aia-instructor` Dev Spaces terminal, run your personal `oc login` comman
 from the OpenShift console and create `.vault-password` with your
 provisioned lab password (mode `0600`). These are the only instructor inputs.
 
-`update-challenges.yml` discovers your personal CTFd board and updates content
-while retaining solves. `deploy.yml` resets your board's challenge progress;
-use it only before playing. Both retain the provisioned accounts and passwords.
+Play first with `ansible-survival-kit`; open the instructor toolkit afterward
+for the assigned administration exercise. `update-challenges.yml` discovers
+your personal CTFd board and updates content while retaining solves.
+`deploy.yml` resets your board's challenge progress; use it before a new session
+or for the explicit training reset, after saving your gameplay results. Never
+reset an active competition. Both retain the provisioned accounts and passwords;
+the board reset does not recreate the VM, AAP resources, or Dev Spaces workspaces.
 The shared `gitea` namespace is restricted; use the Gitea web interface above.
 
 ## Managed node in AAP

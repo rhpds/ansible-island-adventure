@@ -1,6 +1,8 @@
 = Prerequisites and Logistics
 :navtitle: 2. Prerequisites and Logistics
 
+Allow *10 minutes* for this logistics overview. The customer-event agenda below is separate from the two-hour facilitator-training agenda. In this training, you will play first in Module 3 and explore administration in Module 4.
+
 == Infrastructure Requirements
 
 The core requirement is a *pre-deployed Ansible Island Adventure environment*, ready before participants arrive.
@@ -22,7 +24,7 @@ The environment provides these services:
 * *RHEL 9 managed node* — A dedicated VM for Ansible challenges, provisioned separately by the student catalog item
 * *Bastion access* — SSH access to the managed node
 
-Event organizers should allow sufficient provisioning lead time and verify service readiness before the event.
+Event organizers should allow sufficient provisioning lead time and verify service readiness before the event. For this training, complete post-deploy and verify the challenge boards, repository devfiles, AAP inventories and Machine credentials, and service access before Module 3. Have the unlock key ready to give learners during scored play; learners do not open the instructor answer vault yet.
 
 == Staffing and Facilitator Roles
 
@@ -92,12 +94,12 @@ Complete these tasks *before the event day*:
 | Explain the format, hand out credentials, set expectations
 
 | 0:10–0:20
-| Account setup and Warm Up
-| Everyone should complete "Write your name in the sand" and "Unlock the island"
+| Account and workspace setup
+| Verify service logins and tools; do not submit flags yet
 
 | 0:20–0:50 (60-minute event) or 0:20–1:05 (90-minute event)
-| Challenge time
-| 30–45 minutes; never exceed 45 minutes. Include the final countdown in this slot
+| Scored challenges, including Warm Up
+| 30–45 minutes total; never exceed 45 minutes. Start with "Write your name in the sand" and "Unlock the island"; include the final countdown in this slot
 
 | 0:50–1:00 or 1:05–1:30
 | Leaderboard review and wrap-up
@@ -110,7 +112,7 @@ Complete these tasks *before the event day*:
 
 === Pacing Tips
 
-* *Start together.* Everyone should complete the Warm Up challenges before moving on. The facilitator provides the "Unlock the island" key to gate progress.
+* *Start together.* Finish access and workspace setup, then start one scoring clock that includes Warm Up and every later flag submission. The facilitator provides the "Unlock the island" key to gate progress.
 * *Check the leaderboard.* If most participants are stuck at the same point, provide a group hint.
 * *Keep the challenge limit.* Announce the remaining time and stop scoring after at most 45 minutes. Participants can choose challenges appropriate to their skill level; completing every challenge is not the goal.
 * *Adjust for audience.* Technical audiences may skip Warm Up quickly; non-technical audiences may need more roamer support during At the Beach.

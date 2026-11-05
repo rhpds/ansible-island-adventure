@@ -1,9 +1,15 @@
 = Explore the Environment
-:navtitle: 3. Explore the Environment
+:navtitle: 4. Explore the Environment
+:page-aliases: module-03-explore-the-environment.adoc
+
+Allow *20 minutes*: approximately *5 minutes for the architecture tour*, *7 minutes for the instructor workspace, OpenShift login, and vault setup*, and *8 minutes for the playbook walkthrough, reset, and verification*.
+
+You have played as a participant in Module 3. Now switch to administering your own training board. Keep the score and challenge notes you saved; the controlled reset below removes that board's game progress.
 
 == Architecture Tour on OpenShift
 
 Each learner has a personal CTFd instance for this facilitator-training lab.
+Keep your player browser session available. Open a private browser window for CTFd administration and sign in there as `{ctfd_admin_username}` with your provisioned lab password.
 
 === Log into the OpenShift Console
 
@@ -49,7 +55,8 @@ include::partial$service-access.adoc[]
 
 == Open the Instructor Workspace
 
-. In Gitea, open your *`aia-instructor`* repository under your own account. Module 3 uses the instructor toolkit; Module 4 uses the other repository, `ansible-survival-kit`.
+. Save your work in the `ansible-survival-kit` workspace from Module 3. In Gitea, open your *`aia-instructor`* repository under your own account. This second repository contains the event administration toolkit.
+. The lab supports *two running workspaces with separate persistent storage*. Keep the survival-kit workspace available while opening the instructor workspace. For an older environment that allows only one workspace or shares storage between workspaces, ask the organizer to update the policy; stop the survival-kit workspace before starting another one if necessary. Back up local changes before recreating older workspaces.
 . Click *Code → HTTPS* and copy the clone URL. Your URL has this form:
 +
 [source,text,subs="attributes"]
@@ -67,7 +74,7 @@ ansible --version
 ansible-lint --version
 ansible-navigator --version
 ----
-. Paste the `oc login` command saved from the OpenShift console into this terminal. Run `oc whoami` and confirm it reports your instructor account. Keep this token available for the survival-kit workspace in Module 4 as well.
+. Paste the `oc login` command saved from the OpenShift console into this terminal. Run `oc whoami` and confirm it reports your instructor account. This terminal login is used by the administration playbooks.
 
 === Configure Your Vault Password
 
@@ -116,7 +123,7 @@ aia-instructor/
 
 The playbooks use your current `oc login` and local vault password. They discover your personal CTFd namespace from your instructor username and verify its route. They manage challenge content inside your CTFd pod using the permissions already assigned to your account. Infrastructure, accounts, passwords, and event settings are retained.
 
-=== Verify the Playbook Before Playing
+=== Preview and Reset Your Training Board
 
 First validate the toolkit syntax:
 
@@ -128,18 +135,33 @@ ansible-playbook deploy.yml --syntax-check
 
 [WARNING]
 ====
-Running `deploy.yml` clears *your board's solves, submissions, awards, and purchased hints*, then applies the challenge definitions. Accounts and passwords are retained. Complete this reset exercise *before Module 4*.
+Running `deploy.yml` clears *your board's solves, submissions, awards, and purchased hints*, then applies the challenge definitions. It retains accounts, passwords, profile changes, event settings, and challenge IDs. It does not recreate the catalog items or reset your VM, AAP resources, or Dev Spaces workspaces.
+
+This is a deliberate reset of your own training board *after* the practice game. For a customer event, reset before participants begin; never reset an active competition. Keep your Module 3 results before continuing.
 ====
 
-Preview the reset, then apply it from the repository root:
+Preview the reset from the repository root:
 
 [source,bash]
 ----
 ansible-playbook deploy.yml --check
+----
+
+Check that the reported username and CTFd URL match your own board. Then apply the reset:
+
+[source,bash]
+----
 ansible-playbook deploy.yml
 ----
 
-Check that the reported username and CTFd URL match your own board. Confirm the playbook succeeds and your challenges are available before Module 4. If discovery fails, check `oc whoami` and refresh your personal login token; contact the organizer if your namespace or CTFd pod is missing.
+If discovery fails, check `oc whoami` and refresh your personal login token; contact the organizer if your namespace or CTFd pod is missing.
+
+=== Observe What Changed
+
+. Refresh your player CTFd window. Compare your score and solves with the results saved in Module 3: progress has been cleared and the challenges are available again.
+. Confirm your accounts and profile changes remain. If you renamed your player account during the game, use that updated name or email when signing in again; its lab password is unchanged.
+. Check your survival-kit files and any AAP resources you created. They remain available. If you deployed Apache during gameplay, its web page also remains available: the board reset does not undo that automation.
+. As the player, complete *Write Your Name in the Sand* again and submit `DONE`. Keep this single solve for Module 5, where you will verify that a content update preserves it. Save your earlier gameplay notes separately for Module 6.
 
 == Preparing a Customer Event
 
@@ -147,7 +169,8 @@ Allow adequate provisioning lead time, verify service access and challenge conte
 
 == Key Takeaways
 
-* Use `aia-instructor` for deployment and customization; use `ansible-survival-kit` to play the challenges in Module 4.
+* Use `ansible-survival-kit` for the participant experience in Module 3 and `aia-instructor` for administration and customization from this module onward.
 * Save your personal OpenShift login token and use it in your Dev Spaces terminal.
 * Inspect the root `deploy.yml`, its shared tasks, and the board it selects before running it.
-* Reset your personal board before playing; use `update-challenges.yml` for later content edits.
+* A board reset clears game progress while retaining accounts and infrastructure. Use it before a new customer session or for this assigned training exercise.
+* Keep the new Warm Up solve for Module 5; use `update-challenges.yml` for content edits that retain progress.
