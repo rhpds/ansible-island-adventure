@@ -148,13 +148,16 @@ class Controller:
         deadline = time.monotonic() + self.timeout
         while job['status'] not in ('successful', 'failed', 'error', 'canceled'):
             if time.monotonic() >= deadline:
+                summary.update(status='failed', error='aap_probe_timeout')
                 try:
                     self.api('POST', path + 'cancel/', {})
+                    summary['cancellation'] = 'requested'
                 except (ReadinessError, requests.RequestException):
                     summary['cancellation'] = 'unconfirmed'
-                return dict(summary, status='failed', error='aap_probe_timeout')
+                return dict(summary)
             time.sleep(self.poll)
             job = self.api('GET', path)
+            summary['status'] = job['status']
         summary.update(status=job['status'], started=job.get('started'), finished=job.get('finished'))
         events = self.api('GET', path + 'events/', event__in='runner_on_ok,runner_on_failed,runner_on_unreachable', page_size=50)
         if events.get('next'):
@@ -165,6 +168,8 @@ class Controller:
                 try:
                     output = json.loads(result.get('stdout', ''))
                     if output.get('status') in ('passed', 'failed') and isinstance(output.get('targets'), list):
+                        if output['status'] == 'passed' and job['status'] != 'successful':
+                            return dict(summary, status='failed', error='aap_probe_job_not_successful', probe=output)
                         return dict(summary, status=output['status'], probe=output)
                 except (ValueError, TypeError, AttributeError):
                     pass

@@ -117,6 +117,12 @@ class ControllerProbe(unittest.TestCase):
         result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'command','localhost')
         self.assertEqual(result['status'],'failed');self.assertEqual(result['probe'],self.probe)
 
+    def test_failed_aap_execution_cannot_pass_using_partial_success_output(self):
+        self.command_passes=False
+        result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'command','localhost')
+        self.assertEqual(result['status'],'failed');self.assertEqual(result['error'],'aap_probe_job_not_successful')
+        self.assertEqual(result['probe']['status'],'passed')
+
     def test_failed_ping_is_classified_without_returning_raw_error_output(self):
         self.ping_passes=False;result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'ping','rhel')
         self.assertEqual(result['error'],'ssh_timeout');self.assertNotIn('msg',result)
