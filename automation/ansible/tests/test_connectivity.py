@@ -10,6 +10,7 @@ import ssl
 import subprocess
 import tempfile
 import threading
+import time
 import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
@@ -24,10 +25,11 @@ class TransportProbe(unittest.TestCase):
     def setUp(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);root=Path(temp.name)
         subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(root/'key'),'-out',str(root/'cert'),'-days','1','-subj','/CN=localhost'],check=True,capture_output=True)
-        fixture=self;self.http_status=200
+        fixture=self;self.http_status=200;self.response_delay=0
         class Handler(BaseHTTPRequestHandler):
             def log_message(self,*args):pass
             def do_GET(self):
+                time.sleep(fixture.response_delay)
                 self.send_response(fixture.http_status);self.end_headers()
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
         context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(root/'cert',root/'key');self.server.socket=context.wrap_socket(self.server.socket,server_side=True)
@@ -48,6 +50,12 @@ class TransportProbe(unittest.TestCase):
         result=network.local_probe(dict(targets=[self.target],timeout=.5,require_all_addresses=True,validate_certs=True))
         self.assertEqual(result['status'],'failed')
         self.assertEqual(result['targets'][0]['tls_http_error'],'SSLCertVerificationError')
+
+    def test_http_response_can_outlast_the_tcp_connect_deadline(self):
+        self.http_status=503;self.response_delay=.75
+        result=self.probe(dict(self.target,allow_503=True))
+        self.assertEqual(result['status'],'passed')
+        self.assertEqual(result['targets'][0]['http_status'],503)
 
     def test_partial_dns_address_failure_is_retained_and_fails_strict_gate(self):
         port=self.server.server_port;real=socket.getaddrinfo

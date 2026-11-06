@@ -53,6 +53,10 @@ def probe(spec):
       raw.close()
       raise
      item["tls"] = "verified" if spec["validate_certs"] else "unverified"
+     # An unconfigured OpenShift route retries its absent backend before its
+     # expected 503. Keep the TCP/TLS deadline strict while allowing that HTTP
+     # response to arrive; otherwise a healthy route appears unreachable.
+     connection.settimeout(max(timeout, 10))
      connection.sendall(("GET / HTTP/1.1\r\nHost: " + target["host"] + "\r\nConnection: close\r\n\r\n").encode())
      with connection.makefile("rb") as response:
       status = response.readline(256).decode("ascii", "replace").split()
