@@ -183,7 +183,8 @@ tokens, challenge flags, or HTTP response bodies. An undeployed treasure page's
 HTTP 503 is permitted after successful TCP/TLS negotiation; a shared service's
 HTTP 503 still fails readiness. HTTP response headers have a minimum 10-second
 deadline, allowing the router's backend retries before an expected 503, while
-TCP/TLS connections retain the configured shorter deadline. A partial DNS address failure fails the default
+TCP/TLS connections retain the configured shorter deadline. A partial DNS
+address failure fails the default
 strict gate even if another address works. Certificate validation remains enabled.
 
 Every sample writes a distinct private JSON file next to the exported kubeconfig

@@ -72,7 +72,7 @@ class TransportProbe(unittest.TestCase):
 
 class ControllerProbe(unittest.TestCase):
     def setUp(self):
-        fixture=self;self.writes=[];self.jobs={};self.next_id=10;self.command_passes=True;self.ping_passes=True;self.running=False
+        fixture=self;self.writes=[];self.jobs={};self.next_id=10;self.command_passes=True;self.ping_passes=True;self.running=False;self.event_reads=0;self.empty_event_reads=0
         self.node=dict(host='ssh.student.example.test',port=30222,username='lab-user',password='synthetic-node-secret')
         self.probe=dict(status='passed',hostname='execution-pod',targets=[dict(name='managed_ssh',reachable=True,status='passed')])
         class Handler(BaseHTTPRequestHandler):
@@ -96,6 +96,8 @@ class ControllerProbe(unittest.TestCase):
                         if job['module_name']=='command':res=dict(stdout=json.dumps(fixture.probe))
                         else:res=dict(ping='pong') if fixture.ping_passes else dict(msg='SSH Connection timed out')
                         result=dict(results=[dict(event_data=dict(res=res))],next=None)
+                        fixture.event_reads+=1
+                        if fixture.event_reads<=fixture.empty_event_reads:result['results']=[]
                 else:
                     values={
                         'me':[dict(username='instructor-one')],
@@ -124,6 +126,27 @@ class ControllerProbe(unittest.TestCase):
         self.command_passes=False;self.probe=dict(status='failed',targets=[dict(name='managed_ssh',reachable=False,status='failed')])
         result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'command','localhost')
         self.assertEqual(result['status'],'failed');self.assertEqual(result['probe'],self.probe)
+
+    def test_terminal_job_waits_for_delayed_probe_events_without_relaunching(self):
+        self.empty_event_reads=2
+        with patch.object(network.time,'sleep'):
+            result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'command','localhost')
+        self.assertEqual(result['status'],'passed');self.assertEqual(self.event_reads,3)
+        self.assertEqual(len(self.writes),1)
+
+    def test_terminal_ping_waits_for_delayed_events(self):
+        self.empty_event_reads=1
+        with patch.object(network.time,'sleep'):
+            result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'ping','rhel')
+        self.assertEqual(result['status'],'passed');self.assertEqual(self.event_reads,2)
+        self.assertEqual(len(self.writes),1)
+
+    def test_missing_probe_events_remain_a_failure_after_bounded_retries(self):
+        self.empty_event_reads=20
+        with patch.object(network.time,'sleep'):
+            result=self.api.run(dict(inventory=2,credential=3,execution_environment=4),'command','localhost')
+        self.assertEqual(result['error'],'aap_probe_output_missing');self.assertEqual(self.event_reads,10)
+        self.assertEqual(len(self.writes),1)
 
     def test_failed_aap_execution_cannot_pass_using_partial_success_output(self):
         self.command_passes=False

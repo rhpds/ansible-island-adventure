@@ -163,20 +163,28 @@ class Controller:
             job = self.api('GET', path)
             summary['status'] = job['status']
         summary.update(status=job['status'], started=job.get('started'), finished=job.get('finished'))
-        events = self.api('GET', path + 'events/', event__in='runner_on_ok,runner_on_failed,runner_on_unreachable', page_size=50)
-        if events.get('next'):
-            return dict(summary, status='failed', error='ambiguous_aap_events')
-        results = [e.get('event_data', {}).get('res', {}) for e in events.get('results', [])]
+        # Controller can publish the terminal status before its result events.
+        # Retry evidence retrieval, never the command itself, for up to 9 waits.
+        for event_attempt in range(10):
+            events = self.api('GET', path + 'events/', event__in='runner_on_ok,runner_on_failed,runner_on_unreachable', page_size=50)
+            if events.get('next'):
+                return dict(summary, status='failed', error='ambiguous_aap_events')
+            results = [e.get('event_data', {}).get('res', {}) for e in events.get('results', [])]
+            if module_name == 'command':
+                for result in results:
+                    try:
+                        output = json.loads(result.get('stdout', ''))
+                        if output.get('status') in ('passed', 'failed') and isinstance(output.get('targets'), list):
+                            if output['status'] == 'passed' and job['status'] != 'successful':
+                                return dict(summary, status='failed', error='aap_probe_job_not_successful', probe=output)
+                            return dict(summary, status=output['status'], probe=output)
+                    except (ValueError, TypeError, AttributeError):
+                        pass
+            elif results:
+                break
+            if event_attempt < 9:
+                time.sleep(1)
         if module_name == 'command':
-            for result in results:
-                try:
-                    output = json.loads(result.get('stdout', ''))
-                    if output.get('status') in ('passed', 'failed') and isinstance(output.get('targets'), list):
-                        if output['status'] == 'passed' and job['status'] != 'successful':
-                            return dict(summary, status='failed', error='aap_probe_job_not_successful', probe=output)
-                        return dict(summary, status=output['status'], probe=output)
-                except (ValueError, TypeError, AttributeError):
-                    pass
             return dict(summary, status='failed', error='aap_probe_output_missing')
         if job['status'] == 'successful' and any(r.get('ping') == 'pong' for r in results):
             return dict(summary, status='passed')
