@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from urllib.parse import urlsplit
 
 import yaml
@@ -33,6 +34,8 @@ class PostDeployTests(unittest.TestCase):
         shutil.copy(COLLECTION / "post_deploy.yml", self.collection)
         shutil.copy(COLLECTION / "configure_devspaces.yml", self.collection)
         shutil.copy(COLLECTION / "validate_devspaces.yml", self.collection)
+        shutil.copy(COLLECTION / "validate_connectivity.yml", self.collection)
+        shutil.copytree(COLLECTION / "roles/validate_connectivity", self.collection / "roles/validate_connectivity")
         library = self.collection / "library"
         library.mkdir()
         (library / "aia_ctfd_flags.py").write_text('''from ansible.module_utils.basic import AnsibleModule
@@ -52,6 +55,17 @@ m=AnsibleModule(argument_spec={
  'guid':{'type':'str'},'node':{'type':'dict','no_log':True},'validate_certs':{'type':'bool'},'rotate_credential':{'type':'bool'}})
 m.exit_json(changed=False,fqdn='rhel.sandbox-'+m.params['guid']+'.test.invalid')
 ''')
+        (library / "aia_connectivity.py").write_text('''import os
+from ansible.module_utils.basic import AnsibleModule
+m=AnsibleModule(argument_spec={
+ 'url':{'type':'str'},'username':{'type':'str'},'password':{'type':'str','no_log':True},
+ 'guid':{'type':'str'},'node':{'type':'dict','no_log':True},'endpoints':{'type':'list'},
+ 'managed_web_url':{'type':'str'},'connect_timeout':{'type':'float'},
+ 'require_all_addresses':{'type':'bool'},'validate_certs':{'type':'bool'},'job_timeout':{'type':'int'}})
+status='failed' if os.environ.get('AIA_TEST_READINESS_FAILED_USER')==m.params['username'] else 'passed'
+m.exit_json(changed=False,report={'id':'fixture','guid':m.params['guid'],'instructor':m.params['username'],
+ 'status':status,'sources':{s:{'status':status} for s in ['control','aap','aap_ssh','managed_node']}})
+''')
         self.source_password='synthetic-source-key'
         (self.root / '.vault-password').write_text(self.source_password)
         self.student_vaults={}
@@ -69,9 +83,16 @@ with open(os.environ['AIA_TEST_K8S_READS'], 'a') as stream:
 module.exit_json(changed=False, resources=[{'spec': {'devEnvironments':
     json.loads(os.environ['AIA_TEST_DEVSPACES_POLICY'])}}])
 ''')
-        (modules / "k8s.py").write_text('''from ansible.module_utils.basic import AnsibleModule
-module = AnsibleModule(argument_spec={}, bypass_checks=True)
-module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deploy validation')
+        (modules / "k8s.py").write_text('''import json
+from ansible.module_utils.basic import AnsibleModule
+module = AnsibleModule(argument_spec={'kubeconfig':{'type':'str'},'state':{'type':'str'},'definition':{'type':'dict'}})
+definition=module.params['definition']
+if definition.get('kind')!='ConfigMap' or definition.get('metadata',{}).get('name')!='aia-readiness':
+ module.fail_json(msg='Unexpected Kubernetes mutation outside connectivity evidence')
+report=json.loads(definition['data']['report.json'])
+if definition['metadata']['namespace']!=report['instructor']+'-lab':
+ module.fail_json(msg='Readiness evidence crossed instructor namespaces')
+module.exit_json(changed=False)
 ''')
         self.policy = {"maxNumberOfWorkspacesPerUser": 2,
                        "maxNumberOfRunningWorkspacesPerUser": 2,
@@ -218,6 +239,20 @@ module.fail_json(msg='Unexpected Kubernetes mutation during read-only post-deplo
         self.assertEqual(rc, 0, output)
         self.assertEqual(self.writes, writes)
         self.assertEqual(self.student_vaults,vaults)
+
+    def test_failed_readiness_is_retained_for_both_students_before_nonzero_exit(self):
+        with patch.dict(os.environ,{'AIA_TEST_READINESS_FAILED_USER':'instructor-one'}):
+            rc,output=self.run_playbook()
+        self.assertNotEqual(rc,0,output)
+        for user in self.users:
+            report=json.loads((self.root/(user+'.fixture.readiness.json')).read_text())
+            self.assertEqual(report['status'],'failed' if user=='instructor-one' else 'passed')
+            for password in self.users.values():self.assertNotIn(password,json.dumps(report))
+
+    def test_standalone_connectivity_checks_do_not_need_the_event_vault(self):
+        self.flags.unlink()
+        rc,output=self.run_playbook(playbook='validate_connectivity.yml')
+        self.assertEqual(rc,0,output);self.assertEqual(self.writes,[])
 
     def test_web_url_is_only_in_its_students_access_guide(self):
         data=json.loads(self.inventory.read_text())

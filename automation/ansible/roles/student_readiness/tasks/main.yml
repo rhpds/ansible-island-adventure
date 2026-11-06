@@ -1,0 +1,27 @@
+---
+# Catalog adapter: use the provider's actual NodePort, never a guessed VM port.
+- name: Configure and validate this catalog student's runtime access
+  vars:
+    aia_managed_node:
+      host: "{{ openshift_cnv_ssh_address }}"
+      port: "{{ hostvars[groups['bastions'][0]].bastion_ssh_port | int }}"
+      username: "{{ control_user_name | default(student_name) }}"
+      password: "{{ control_user_password | default(common_password) }}"
+    aia_student:
+      aap_url: "{{ aap_url }}"
+      aap_username: "{{ instructor.name }}"
+      ctfd_url: "https://island-{{ instructor.name }}-ctfd.{{ openshift_cluster_ingress_domain }}"
+      devspaces_url: "https://devspaces.{{ openshift_cluster_ingress_domain }}"
+      managed_node_web_url: "https://treasure-{{ guid }}.{{ sandbox_openshift_apps_domain }}"
+    aap_password: "{{ instructor.password }}"
+    aia_readiness_publish_user_info: true
+  block:
+    - name: Prepare the personal AAP inventory and Machine credential
+      block:
+        - name: Configure personal managed-node access
+          ansible.builtin.include_role:
+            name: configure_student_aap
+      always:
+        - name: Measure and publish resource connectivity even when setup fails
+          ansible.builtin.include_role:
+            name: validate_connectivity

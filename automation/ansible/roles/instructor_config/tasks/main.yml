@@ -20,3 +20,8 @@
 
 - name: "{{ instructor.name }} — Bootstrap CTFd access"
   ansible.builtin.include_tasks: ctfd_bootstrap.yml
+
+- name: "{{ instructor.name }} — Validate actual student runtime connectivity"
+  ansible.builtin.include_role:
+    name: student_readiness
+  when: instructor_config_validate_connectivity | bool

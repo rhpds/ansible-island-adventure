@@ -9,6 +9,8 @@ Catalog workload roles live in this directory:
 - `roles/instructor_config/` — Instructor services and access, including CTFd bootstrap, Gitea, AAP, and Keycloak integration
 - `roles/keycloak_ocp_logout_fix/` — Keycloak/OpenShift logout configuration
 - `roles/configure_devspaces/` — Read-only validation of the leaderboard CI's workspace policy, plus standalone repair for older deployments
+- `roles/validate_connectivity/` — Runtime connectivity gates and persistent evidence for each instructor
+- `roles/student_readiness/` — Catalog adapter for managed-node AAP access and connectivity validation
 
 The project root also retains `ansible-testing/` playbooks and the
 `collections/ansible_collections/rhpds/aia/` collection for local role development.
@@ -30,6 +32,18 @@ are excluded from the default role path. Reprovisioning preserves existing
 challenge data and event settings. The bootstrap command has its own timeout
 and retry settings: `ctfd_bootstrap_timeout` (120 seconds),
 `ctfd_bootstrap_retries` (2), and `ctfd_bootstrap_delay` (10 seconds).
+
+Catalog maintainers can enable `instructor_config_validate_connectivity: true`
+after the instructor services bootstrap. This configures the personal AAP
+inventory and Machine credential, then runs the same connectivity gate as
+post-deploy. The adapter uses the cloud provider's published SSH hostname and
+actual bastion NodePort. It publishes the readiness status and evidence location
+through AgnosticD user data before failing an unhealthy deployment. The option
+defaults to false for existing catalog consumers; post-deploy enables its own
+readiness gate by default.
+
+Modules used by catalog roles live in `plugins/modules/`. The `library/` links
+retain local playbook compatibility without maintaining separate implementations.
 
 Load content after the student CI succeeds, either from your event playbook or
 with the standalone entry point (starting at the repository root):
@@ -147,6 +161,62 @@ Post-deploy reuses that token/CA kubeconfig and checks access with `oc whoami`;
 it does not perform another password login or replace the exported identity.
 Catalog and legacy invocations without `aia_kubeconfig` retain their password
 login. The role uses the `oc` binary found on the caller's path.
+
+### Runtime readiness and repeatable network evidence
+
+Post-deploy measures connectivity in an `always` block, including when a processed
+student's configuration fails. Connectivity failures are asserted after the serial
+loop, so one bad runtime path does not prevent sampling the remaining students.
+The playbook returns nonzero if any required runtime path fails. It tests:
+
+- Control machine to shared HTTPS endpoints and every advertised VM SSH address.
+- AAP's Default execution environment to those endpoints, using a personal ad hoc
+  command against the inventory's controller-local `localhost` host.
+- An actual Ansible `ping` from AAP to `rhel`, using the personal Machine
+  credential. If the runtime TCP probe finds no reachable SSH address, the ping
+  is marked blocked instead of waiting for every SSH connection timeout.
+- The managed VM back to Gitea, AAP, CTFd, and Dev Spaces over HTTPS.
+
+Reports include timestamps, the source hostname, resolved addresses, per-address
+results, TLS and HTTP status, and AAP command URLs. They do not contain passwords,
+tokens, challenge flags, or HTTP response bodies. An undeployed treasure page's
+HTTP 503 is permitted after successful TCP/TLS negotiation; a shared service's
+HTTP 503 still fails readiness. A partial DNS address failure fails the default
+strict gate even if another address works. Certificate validation remains enabled.
+
+Every sample writes a distinct private JSON file next to the exported kubeconfig
+(`run-id.instructor-guid.sample-id.readiness.json`). Catalog runs use their
+`output_dir`. Both paths publish the latest report as ConfigMap `aia-readiness`
+in the instructor's lab namespace before asserting success. The instructor can
+retrieve that evidence using their existing OpenShift login:
+
+```bash
+oc get configmap aia-readiness -n instructor-<guid>-lab \
+  -o jsonpath='{.data.report\.json}'
+```
+
+Repeat the probes without rerunning repository configuration, importing content,
+or loading the event vault:
+
+```bash
+cd automation/ansible
+ansible-playbook -i ../../.aia-dev/runs/<run-id>.students.inventory.json \
+  validate_connectivity.yml
+```
+
+Override `aia_readiness_connect_timeout` (3 seconds per address),
+`aia_readiness_job_timeout` (300 seconds per AAP command), or
+`aia_readiness_report_dir` when needed. `aia_readiness_require_all_addresses`
+defaults to true. `aia_readiness_enabled: false` explicitly skips this gate;
+skipping it does not establish connectivity readiness. Ansible check mode also
+skips probes because they launch AAP command records. Probe jobs remain as audit
+evidence; only a probe's own command is canceled if it exceeds its deadline.
+
+The AAP host's `localhost` interpreter follows `ansible_playbook_python` so the
+gate uses the selected execution environment's Python. Control-machine SSH
+discovery tries alternative advertised addresses within a 30-second connect
+budget, with at most 3 seconds per address. This handles a bad first DNS address;
+it cannot repair a network path where every destination address is unreachable.
 
 To validate Dev Spaces alone, use the same exported inventory:
 

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import threading
 import unittest
+from unittest.mock import Mock, patch
 from urllib.parse import parse_qs,urlsplit
 import requests
 
@@ -74,6 +75,8 @@ class StudentAAP(unittest.TestCase):
         writes=list(self.writes)
         self.assertFalse(self.configure()['changed']);self.assertEqual(writes,self.writes)
         self.assertNotIn(self.node['password'],json.dumps(result))
+        localhost=next(h for h in self.resources['hosts'] if h['name']=='localhost')
+        self.assertEqual(json.loads(localhost['variables'])['ansible_python_interpreter'],'{{ ansible_playbook_python }}')
 
     def test_check_mode_does_not_create_anything(self):
         self.assertTrue(self.configure(check=True)['changed']);self.assertEqual(self.writes,[])
@@ -93,3 +96,18 @@ class StudentAAP(unittest.TestCase):
         self.resources['credentials'].append(dict(id=9,name='Managed Node SSH',organization=1,credential_type=7,description='User owned',inputs={}))
         with self.assertRaises(aap.ConfigurationError):self.configure()
         self.assertEqual(self.resources['credentials'][0]['description'],'User owned')
+
+
+class SSHAddressFallback(unittest.TestCase):
+    def test_timeout_on_first_address_does_not_hide_a_reachable_second_address(self):
+        bad,good=Mock(),Mock();bad.connect.side_effect=TimeoutError()
+        addresses=[(2,1,6,'',('192.0.2.1',22)),(2,1,6,'',('192.0.2.2',22))]
+        with patch.object(aap.socket,'getaddrinfo',return_value=addresses), patch.object(aap.socket,'socket',side_effect=[bad,good]):
+            self.assertIs(aap.connect_socket('ssh.example.test',22),good)
+        bad.close.assert_called_once();good.close.assert_not_called()
+
+    def test_total_connect_budget_stops_address_iteration(self):
+        addresses=[(2,1,6,'',('192.0.2.1',22))]
+        with patch.object(aap.socket,'getaddrinfo',return_value=addresses), patch.object(aap.time,'monotonic',side_effect=[0,31]), patch.object(aap.socket,'socket') as create:
+            with self.assertRaises(aap.ConfigurationError):aap.connect_socket('ssh.example.test',22)
+        create.assert_not_called()

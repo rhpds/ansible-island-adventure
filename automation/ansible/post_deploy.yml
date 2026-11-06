@@ -68,51 +68,81 @@
   environment:
     KUBECONFIG: "{{ aia_kubeconfig }}"
   tasks:
-    - name: Configure each instructor's AAP managed-node access
-      tags: [student_access, aap]
-      ansible.builtin.include_role:
-        name: configure_student_aap
-        apply:
+    - name: Configure student services
+      block:
+        - name: Configure each instructor's AAP managed-node access
           tags: [student_access, aap]
+          ansible.builtin.include_role:
+            name: configure_student_aap
+            apply:
+              tags: [student_access, aap]
 
-    - name: Configure and verify student Gitea repositories
-      tags: [student_access]
-      ansible.builtin.include_role:
-        name: configure_student
-        apply:
+        - name: Configure and verify student Gitea repositories
           tags: [student_access]
+          ansible.builtin.include_role:
+            name: configure_student
+            apply:
+              tags: [student_access]
 
-    - name: Prepare OpenShift access for CTFd content loading
-      ansible.builtin.include_role:
-        name: instructor_config
-        tasks_from: oc_login
+        - name: Prepare OpenShift access for CTFd content loading
+          ansible.builtin.include_role:
+            name: instructor_config
+            tasks_from: oc_login
 
-    - name: Load the student's real challenges into CTFd
-      ansible.builtin.include_role:
-        name: instructor_config
-        tasks_from: ctfd_config
-        apply:
-          no_log: true
-      vars:
-        ctfd_challenges: "{{ aia_event_challenges }}"
-        ctfd_challenges_advanced: []
+        - name: Load the student's real challenges into CTFd
+          ansible.builtin.include_role:
+            name: instructor_config
+            tasks_from: ctfd_config
+            apply:
+              no_log: true
+          vars:
+            ctfd_challenges: "{{ aia_event_challenges }}"
+            ctfd_challenges_advanced: []
 
-    - name: Update real flag values without replacing challenges or scores
-      tags: [flags]
-      aia_ctfd_flags:
-        url: "{{ aia_student.ctfd_url }}"
-        username: "{{ ctfd_admin_username }}"
-        password: "{{ ctfd_admin_password }}"
-        challenges: "{{ aia_event_challenges }}"
-        validate_certs: "{{ aia_validate_certs | default(true) }}"
+        - name: Update real flag values without replacing challenges or scores
+          tags: [flags]
+          aia_ctfd_flags:
+            url: "{{ aia_student.ctfd_url }}"
+            username: "{{ ctfd_admin_username }}"
+            password: "{{ ctfd_admin_password }}"
+            challenges: "{{ aia_event_challenges }}"
+            validate_certs: "{{ aia_validate_certs | default(true) }}"
 
-    - name: Report student configuration
-      tags: [flags]
-      ansible.builtin.debug:
-        msg:
-          student: "{{ instructor.name }}"
-          ctfd_url: "{{ aia_student.ctfd_url }}"
-          ctfd_username: "{{ student_name }}"
-          gitea_username: "{{ gitea_username }}"
-          access_guide: "{{ gitea_url }}/{{ gitea_username }}/aia-instructor/src/branch/main/ISLAND_ACCESS.md"
-          event_challenges: "{{ aia_event_challenges | length }}"
+        - name: Report student configuration
+          tags: [flags]
+          ansible.builtin.debug:
+            msg:
+              student: "{{ instructor.name }}"
+              ctfd_url: "{{ aia_student.ctfd_url }}"
+              ctfd_username: "{{ student_name }}"
+              gitea_username: "{{ gitea_username }}"
+              access_guide: "{{ gitea_url }}/{{ gitea_username }}/aia-instructor/src/branch/main/ISLAND_ACCESS.md"
+              event_challenges: "{{ aia_event_challenges | length }}"
+
+      always:
+        - name: Validate resource connectivity and retain evidence
+          tags: [readiness]
+          vars:
+            aia_readiness_enforce_gate: false
+          ansible.builtin.include_role:
+            name: validate_connectivity
+            apply:
+              tags: [readiness]
+
+# Enforcing inside serial: 1 would terminate the play at its first failed batch.
+- name: Require readiness after collecting every student's evidence
+  hosts: aia_students
+  connection: local
+  gather_facts: false
+  tags: [readiness]
+  tasks:
+    - name: Require this student's measured runtime paths to pass
+      when:
+        - aia_readiness_enabled | default(true) | bool
+        - not ansible_check_mode
+      ansible.builtin.assert:
+        that:
+          - aia_connectivity_result.report.status == 'passed'
+        fail_msg: >-
+          Connectivity readiness failed for {{ inventory_hostname }}. See the
+          retained JSON report and ConfigMap {{ instructor.lab_ns | default(instructor.name ~ '-lab') }}/aia-readiness.
